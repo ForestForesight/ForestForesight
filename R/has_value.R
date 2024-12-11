@@ -13,17 +13,17 @@
 #'   For SpatRaster objects, returns TRUE if the raster exists and has valid dimensions.
 #'
 #' @examples
-#' has_value(c(1, 2, NA, 4))        # TRUE (vector with length > 1)
-#' has_value(NULL)                   # FALSE
-#' has_value(NA)                     # FALSE
-#' has_value("")                     # FALSE
-#' has_value(character(0))           # FALSE
-#' has_value(NA_character_)          # FALSE
-#' has_value(factor("a"))           # TRUE
-#' has_value(list())                # FALSE
+#' has_value(c(1, 2, NA, 4)) # TRUE (vector with length > 1)
+#' has_value(NULL) # FALSE
+#' has_value(NA) # FALSE
+#' has_value("") # FALSE
+#' has_value(character(0)) # FALSE
+#' has_value(NA_character_) # FALSE
+#' has_value(factor("a")) # TRUE
+#' has_value(list()) # FALSE
 #' \dontrun{
-#' r <- terra::rast()              # Empty raster
-#' has_value(r)                     # FALSE
+#' r <- terra::rast() # Empty raster
+#' has_value(r) # FALSE
 #' }
 #'
 #' @export

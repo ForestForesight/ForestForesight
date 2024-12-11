@@ -5,16 +5,19 @@
 \title{Check and Report ForestForesight File Structure}
 \usage{
 ff_structurecheck(
-  shape,
-  folder_path,
+  shape = NULL,
+  country = Sys.getenv("DEFAULT_COUNTRY"),
+  folder_path = Sys.getenv("FF_FOLDER"),
   check_date = NULL,
   error_on_issue = FALSE,
   silent_on_pass = FALSE,
-  groundtruth_pattern = "groundtruth6m"
+  groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH")
 )
 }
 \arguments{
 \item{shape}{A SpatVector object representing the area of interest.}
+
+\item{country}{The ISO-3 code of a country for which you want to do the structure check.}
 
 \item{folder_path}{Character string. Path to the main ForestForesight folder.}
 

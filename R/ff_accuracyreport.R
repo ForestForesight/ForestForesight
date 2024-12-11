@@ -186,7 +186,10 @@ ff_accuracyreport <- function(accuracy_paths, importance_paths = NULL, output_pa
   avg_importance <- avg_importance[order(avg_importance$rank), ]
 
   # If you need to keep the model_name column:
-  importance_results <- data.frame(model_name = model_names, feature = avg_importance$feature, rank = avg_importance$rank, importance = avg_importance$importance)
+  importance_results <- data.frame(
+    model_name = model_names, feature = avg_importance$feature,
+    rank = avg_importance$rank, importance = avg_importance$importance
+  )
 
   par(mar = c(5, 20, 4, 2)) # Adjust margins (bottom, left, top, right)
   importance_results <- importance_results[nrow(importance_results):1, ]

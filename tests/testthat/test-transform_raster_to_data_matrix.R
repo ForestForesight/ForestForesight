@@ -14,11 +14,6 @@ test_that("transform_raster_to_data_matrix works as expected", {
   expect_true(is.data.frame(dts) || is.matrix(dts)) # Check output is matrix or data frame
   expect_true(ncol(dts) >= 2) # Check for extracted data columns
   expect_true("x" %in% colnames(dts) && "y" %in% colnames(dts)) # Check x, y coords
-
-  # # Case 4: empty raster input (edge case)
-  # empty_raster <- rast(nrows = 0, ncols = 0)
-  # dts <- transform_raster_to_data_matrix(empty_raster, shape, shrink, addxy, NULL, NULL)
-  # expect_equal(dim(dts), c(0, 0))                  # Expect empty matrix as output
 })
 
 test_that("transform_raster_to_data_matrix works with 'no shrink' and addxy = FALSE", {

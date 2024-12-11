@@ -2,7 +2,7 @@
 % Please edit documentation in R/ff_cat.R
 \name{ff_cat}
 \alias{ff_cat}
-\title{Colorized Cat Function}
+\title{Colorized Cat Function with Enhanced Logging}
 \usage{
 ff_cat(
   ...,
@@ -10,11 +10,11 @@ ff_cat(
   sep = " ",
   fill = FALSE,
   labels = NULL,
-  append = FALSE,
   style = NULL,
-  verbose = FALSE,
-  logfile = NULL,
-  timestamp = FALSE,
+  verbose = TRUE,
+  log_level = "INFO",
+  log_file = NULL,
+  timestamp = Sys.getenv("TIMESTAMP"),
   auto_newline = TRUE
 )
 }
@@ -30,31 +30,29 @@ Must be a valid crayon color (e.g., "red", "blue", "green").}
 
 \item{labels}{Character vector of labels for the lines printed.}
 
-\item{append}{Logical. If TRUE, output will be appended to the file.}
-
 \item{style}{Character string specifying additional style to apply.
 Must be a valid crayon style (e.g., "bold", "underline").}
 
-\item{logfile}{Character. Path to a logfile that should be printed to.}
+\item{verbose}{Logical. Whether to print to console.}
 
-\item{timestamp}{Logical. Whether a timestamp should be added}
+\item{log_level}{Character. Logging level ("DEBUG", "INFO", "WARN", "ERROR"). Defaults to "INFO".}
 
-\item{auto_newline}{Logical. Whether a newline should be added}
+\item{log_file}{Character. Path to the log file. If NULL, uses default logging configuration.}
 
-\item{verbose.}{Logical. Whether the ff_cat function should print. Is always overridden by logfile if that is set}
+\item{timestamp}{Logical. Whether to include timestamp in console output.}
+
+\item{auto_newline}{Logical. Whether to automatically add newline.}
 }
 \value{
 No return value, called for side effects.
 }
 \description{
-This function wraps the base R `cat()` function and adds color and style
-capabilities using the crayon package.
+This function provides colorized output capabilities with structured logging
+using the logging package.
 }
 \examples{
 ff_cat("Hello, world!")
-ff_cat("This is red text", color = "red")
-ff_cat("The sky is", "blue", color = "blue")
-ff_cat("Bold green text", color = "green", style = "bold")
-ff_cat("Line 1", "Line 2", color = "cyan", fill = TRUE)
+ff_cat("Error message", color = "red", log_level = "ERROR")
+ff_cat("Debug info", color = "blue", log_level = "DEBUG")
 
 }

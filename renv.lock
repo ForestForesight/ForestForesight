@@ -863,6 +863,17 @@
       ],
       "Hash": "08cff46381a242d44c0d8dd0aabd9f71"
     },
+    "logging": {
+      "Package": "logging",
+      "Version": "0.10-108",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "methods"
+      ],
+      "Hash": "fbef2ca79e23f11e033e89317b4c4770"
+    },
     "lubridate": {
       "Package": "lubridate",
       "Version": "1.9.3",

@@ -42,7 +42,8 @@
 #' @import xgboost terra
 #' @export
 
-ff_predict <- function(model, test_matrix, thresholds = 0.5, groundtruth = NA, indices = NA,
+ff_predict <- function(model, test_matrix, thresholds = as.numeric(Sys.getenv("DEFAULT_THRESHOLD")),
+                       groundtruth = NA, indices = NA,
                        templateraster = NA, verbose = FALSE, certainty = FALSE) {
   # Load and validate model
   loaded_model <- load_model(model)
@@ -109,7 +110,7 @@ remove_extra_features <- function(test_matrix, loaded_model) {
       ff_cat(
         "Removing extra features from the test matrix:",
         paste(extra_features, collapse = ", "),
-        color = "yellow"
+        color = "yellow", log_level = "WARNING"
       )
       test_matrix$features <- test_matrix$features[, setdiff(test_features, extra_features),
         drop = FALSE

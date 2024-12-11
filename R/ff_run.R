@@ -72,8 +72,8 @@
 #'
 #' @keywords machine-learning prediction forestry raster
 
-ff_run <- function(shape = NULL, country = NULL, prediction_dates = NULL,
-                   ff_folder,
+ff_run <- function(shape = NULL, country = Sys.getenv("DEFAULT_COUNTRY"), prediction_dates = NULL,
+                   ff_folder = Sys.getenv("FF_FOLDER"),
                    train_dates = NULL,
                    validation_dates = NULL,
                    model_save_path = NULL,
@@ -81,9 +81,9 @@ ff_run <- function(shape = NULL, country = NULL, prediction_dates = NULL,
                    pretrained_model_path = NULL,
                    ff_prep_parameters = NULL,
                    ff_train_parameters = NULL,
-                   certainty_threshold = 0.5,
-                   filter_features = "initialforestcover",
-                   filter_conditions = ">0",
+                   certainty_threshold = as.numeric(Sys.getenv("DEFAULT_THRESHOLD")),
+                   filter_features = Sys.getenv("FOREST_MASK"),
+                   filter_conditions = Sys.getenv("FOREST_MASK_FILTER"),
                    accuracy_output_path = NULL,
                    importance_output_path = NULL,
                    verbose = TRUE,
@@ -123,8 +123,11 @@ ff_run <- function(shape = NULL, country = NULL, prediction_dates = NULL,
   )
 
   prediction_data <- run_predictions(
-    ff_folder, shape, groundtruth_pattern, prediction_dates, tiles, filter_features, filter_conditions, ff_prep_parameters,
-    pretrained_model_path, certainty_threshold, accuracy_output_path, country, predictions_save_path, verbose
+    ff_folder, shape, groundtruth_pattern,
+    prediction_dates, tiles, filter_features,
+    filter_conditions, ff_prep_parameters,
+    pretrained_model_path, certainty_threshold,
+    accuracy_output_path, country, predictions_save_path, verbose
   )
   return(list(
     predictions = prediction_data$predictions,
@@ -266,7 +269,7 @@ check_dates <- function(train_dates, validation_dates, prediction_dates,
       if (is.na(months_back) || months_back <= 0) {
         months_back <- 6
         ff_cat(paste("Invalid or missing groundtruth_pattern:", groundtruth_pattern, ". Defaulting to 6 months."),
-          color = "yellow", verbose = TRUE
+          color = "yellow", verbose = TRUE, log_level = "WARNING"
         )
       }
 
@@ -276,15 +279,20 @@ check_dates <- function(train_dates, validation_dates, prediction_dates,
       )
       ff_cat("No train dates were given though a training was wanted, model will be trained on",
         train_dates,
-        color = "yellow"
+        color = "yellow", log_level = "WARNING"
       )
     }
 
     if (max(lubridate::ymd(train_dates)) > min(lubridate::ymd(prediction_dates))) {
-      ff_cat("(some) training dates are after prediction dates", color = "yellow")
+      ff_cat("(some) training dates are after prediction dates",
+        color = "yellow",
+        log_level = "WARNING"
+      )
     }
     if ((min(lubridate::ymd(prediction_dates)) - max(lubridate::ymd(train_dates))) < 170) {
-      ff_cat("There should be at least 6 months between training and testing/predicting", color = "yellow")
+      ff_cat("There should be at least 6 months between training and testing/predicting",
+        color = "yellow", log_level = "WARNING"
+      )
     }
   }
   prediction_dates <- sort(prediction_dates)
@@ -311,9 +319,11 @@ check_dates <- function(train_dates, validation_dates, prediction_dates,
 #' @return A list containing the validated shape object and tiles
 #'
 #' @noRd
-check_folder_and_input <- function(ff_folder, country, shape, train_dates, prediction_dates, model_save_path, predictions_save_path) {
+check_folder_and_input <- function(ff_folder, country, shape, train_dates, prediction_dates,
+                                   model_save_path, predictions_save_path) {
   if (!has_value(model_save_path) && !has_value(prediction_dates)) {
-    stop("no model is being saved and no predictions are being made (no prediction dates), so there is no point to this")
+    stop("no model is being saved and no predictions are
+         being made (no prediction dates), so there is no point to this")
   }
 
   if (has_value(predictions_save_path) && !has_value(prediction_dates)) {
@@ -322,7 +332,7 @@ check_folder_and_input <- function(ff_folder, country, shape, train_dates, predi
 
 
   if ((has_value(shape) + has_value(country)) != 1) {
-    stop("either input shape or country should be given, not neither and not both")
+    ff_cat("the input shape is given precedence over the country code")
   }
   if (has_value(shape)) {
     ForestForesight::check_spatvector(shape,
@@ -701,7 +711,8 @@ analyze_predictions <- function(ff_folder, shape, tile, prediction, prediction_d
 #' @return Merged SpatRaster object
 #'
 #' @noRd
-merge_and_write_raster <- function(raster_list, shape, prediction_date, predictions_save_path, prediction_dates, verbose) {
+merge_and_write_raster <- function(raster_list, shape, prediction_date,
+                                   predictions_save_path, prediction_dates, verbose) {
   if (length(raster_list) == 1) {
     merged_prediction <- raster_list[[1]]
   } else {
@@ -876,8 +887,10 @@ print_model_scoring <- function(merged_polygons, prediction_date, verbose) {
 #' The function will skip accuracy assessment if groundtruth data is unavailable.
 #'
 #' @noRd
-run_predictions <- function(ff_folder, shape, groundtruth_pattern, prediction_dates, tiles, filter_features, filter_conditions, ff_prep_parameters,
-                            pretrained_model_path, certainty_threshold, accuracy_output_path, country, predictions_save_path, verbose) {
+run_predictions <- function(ff_folder, shape, groundtruth_pattern, prediction_dates, tiles,
+                            filter_features, filter_conditions, ff_prep_parameters,
+                            pretrained_model_path, certainty_threshold, accuracy_output_path,
+                            country, predictions_save_path, verbose) {
   if (prediction_dates[1] == "3000-01-01") {
     # if no prediction dates were given the prediction date was set to 3000 but should not make
     # actual predictions

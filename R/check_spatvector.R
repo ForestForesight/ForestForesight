@@ -66,7 +66,7 @@ check_coordinate_system <- function(x) {
   if (is.na(terra::crs(x))) {
     x <- handle_missing_crs(x)
   } else if (!is_wgs84(terra::crs(x))) {
-    ff_cat("Coordinate system is not EPSG:4326. Converting to WGS84.", color = "yellow")
+    ff_cat("Coordinate system is not EPSG:4326. Converting to WGS84.", color = "yellow", log_level = "WARNING")
     x <- terra::project(x, "EPSG:4326")
   }
   return(x)
@@ -77,7 +77,7 @@ check_coordinate_system <- function(x) {
 handle_missing_crs <- function(x) {
   if (is_within_degree_range(x)) {
     ff_cat("No coordinate system defined but coordinates appear to be in decimal degrees.
-            Assuming WGS84.", color = "yellow")
+            Assuming WGS84.", color = "yellow", log_level = "WARNING")
     terra::crs(x) <- "EPSG:4326"
     return(x)
   }
@@ -121,7 +121,7 @@ check_overlap_percentage <- function(x, intersection) {
     ff_cat(sprintf(
       "Input shape only partially overlaps with known country boundaries (%.1f%% overlap)",
       overlap_percentage
-    ), color = "yellow")
+    ), color = "yellow", log_level = "WARNING")
   }
   return(overlap_percentage)
 }
@@ -140,10 +140,10 @@ check_area_bounds <- function(x) {
 
   if (area_ha > upper_area_threshold) {
     ff_cat("Input area is very large.
-           This may impact performance and processing time.", color = "yellow")
+           This may impact performance and processing time.", color = "yellow", log_level = "WARNING")
   }
   if (area_ha < lower_area_threshold) {
     ff_cat("Input area is smaller than 10,000 hectares.
-            This may impact performance for training purposes.", color = "yellow")
+            This may impact performance for training purposes.", color = "yellow", log_level = "WARNING")
   }
 }

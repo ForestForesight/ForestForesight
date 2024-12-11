@@ -56,7 +56,8 @@
 #'   \item{test_indices}{Indices of the filtered samples}
 #'   \item{groundtruth_raster}{A SpatRaster of the ground truth}
 #'   \item{features}{A vector of feature names}
-#'   \item{has_groundtruth}{A boolean stating that the groundtruthraster is actually the groundtruth and not just a template}
+#'   \item{has_groundtruth}{A boolean stating that the groundtruthraster is
+#'   actually the groundtruth and not just a template}
 #'
 #' @export
 #'
@@ -81,7 +82,8 @@
 #'
 #' @keywords machine-learning data-preparation forestry
 
-ff_prep <- function(datafolder = Sys.getenv("DATA_FOLDER"), country = NA, shape = NA, tiles = NULL,
+ff_prep <- function(datafolder = Sys.getenv("FF_FOLDER"), country = Sys.getenv("DEFAULT_COUNTRY"),
+                    shape = NA, tiles = NULL,
                     groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH"), dates = "2023-01-01",
                     inc_features = NA, exc_features = NA, filter_features = NULL,
                     filter_conditions = NULL, sample_size = 0.3, validation_sample = 0,
@@ -90,7 +92,7 @@ ff_prep <- function(datafolder = Sys.getenv("DATA_FOLDER"), country = NA, shape 
   ######## pre-conditions check########
   if (!has_value(groundtruth_pattern)) {
     ff_cat("no environment variable for DEFAULT_GROUNDTRUTH, reverting to groundtruth6m",
-      color = "yellow", verbose = verbose
+      color = "yellow", verbose = verbose, log_level = "WARNING"
     )
     groundtruth_pattern <- "groundtruth6m"
   }
@@ -136,7 +138,10 @@ ff_prep <- function(datafolder = Sys.getenv("DATA_FOLDER"), country = NA, shape 
 
   # split data into feature data and label data
 
-  split_result <- split_feature_and_label_data(feature_dataset, groundtruth_pattern, label_threshold, groundtruth_raster, verbose)
+  split_result <- split_feature_and_label_data(
+    feature_dataset,
+    groundtruth_pattern, label_threshold, groundtruth_raster, verbose
+  )
   feature_dataset <- split_result$feature_dataset
   data_label <- split_result$data_label
   groundtruth_raster <- split_result$groundtruth_raster
@@ -148,7 +153,7 @@ ff_prep <- function(datafolder = Sys.getenv("DATA_FOLDER"), country = NA, shape 
   validation_matrix <- validation_result$validation_matrix
   ########## return data from prep function to main function####
   if (has_value(feature_dataset$label) && sum(feature_dataset$label) == 0) {
-    ff_cat("Data contains no actuals, all labels are 0", color = "yellow", verbose = verbose)
+    ff_cat("Data contains no actuals, all labels are 0", color = "yellow", verbose = verbose, log_level = "WARNING")
   }
 
   return(list(
@@ -161,7 +166,8 @@ ff_prep <- function(datafolder = Sys.getenv("DATA_FOLDER"), country = NA, shape 
   ))
 }
 
-check_pre_conditions <- function(dates, country, shape, tiles, shrink, inc_features, exc_features, verbose, datafolder) {
+check_pre_conditions <- function(dates, country, shape, tiles, shrink,
+                                 inc_features, exc_features, verbose, datafolder) {
   ff_cat("Checking ff_prep function input", verbose = verbose)
   if (!has_value(datafolder)) {
     stop("no environment variable for DATA_FOLDER found and no other option given")
@@ -173,7 +179,7 @@ check_pre_conditions <- function(dates, country, shape, tiles, shrink, inc_featu
   earliest_date <- Sys.getenv("EARLIEST_DATA_DATE")
   if (!has_value(earliest_date)) {
     ff_cat("no environment variable for EARLIEST_DATA_DATE, reverting to 2021-01-01",
-      color = "yellow", verbose = verbose
+      color = "yellow", verbose = verbose, log_level = "WARNING"
     )
     earliest_date <- "2021-01-01"
   }
@@ -309,13 +315,17 @@ prepare_raster_data_by_tile <- function(selected_files, shape, shrink, window, v
 
   # TODO: check if !is.null(extent) && is.numeric(extent) doesnt affect much, added to pass unit test
   if (!is.null(extent) && is.numeric(extent)) {
-    ff_cat("with extent", round(extent[1], 5), round(extent[2], 5), round(extent[3], 5), round(extent[4], 5), verbose = verbose)
+    ff_cat("with extent", round(extent[1], 5), round(extent[2], 5),
+      round(extent[3], 5), round(extent[4], 5),
+      verbose = verbose
+    )
   }
   rasstack <- terra::rast(sapply(selected_files, function(x) terra::rast(x, win = extent)))
   return(list(extent = extent, rasstack = rasstack))
 }
 
-load_groundtruth_raster <- function(selected_files, groundtruth_pattern, first_loop_iteration, verbose, extent, has_groundtruth) {
+load_groundtruth_raster <- function(selected_files, groundtruth_pattern,
+                                    first_loop_iteration, verbose, extent, has_groundtruth) {
   if (first_loop_iteration) {
     if (length(grep(groundtruth_pattern, selected_files)) > 0) {
       has_groundtruth <- TRUE
@@ -329,7 +339,10 @@ load_groundtruth_raster <- function(selected_files, groundtruth_pattern, first_l
   } else {
     groundtruth_raster <- NA
   }
-  list_gt_raster <- list(groundtruth_raster = groundtruth_raster, has_groundtruth = has_groundtruth, first_loop_iteration = first_loop_iteration)
+  list_gt_raster <- list(
+    groundtruth_raster = groundtruth_raster, has_groundtruth = has_groundtruth,
+    first_loop_iteration = first_loop_iteration
+  )
   return(list_gt_raster)
 }
 
@@ -363,14 +376,20 @@ append_date_based_features <- function(feature_dataset, date) {
   feature_dataset <- as.data.frame(feature_dataset)
   feature_dataset$sinmonth <- sin((2 * pi * as.numeric(format(as.Date(date), "%m"))) / 12)
   feature_dataset$month <- as.numeric(format(as.Date(date), "%m"))
-  feature_dataset$monthssince2019 <- round(as.numeric(lubridate::as.period(as.Date(date) - as.Date("2019-01-01"), "months"), "months"))
+  feature_dataset$monthssince2019 <- round(as.numeric(lubridate::as.period(
+    as.Date(date) - as.Date("2019-01-01"), "months"
+  ), "months"))
   return(as.matrix(feature_dataset))
 }
 
-sample_and_combine_data <- function(date, current_tile_feature_dataset, feature_dataset, filtered_indices, sample_size, first_loop_iteration, pixel_indices, verbose) {
+sample_and_combine_data <- function(date, current_tile_feature_dataset, feature_dataset,
+                                    filtered_indices, sample_size, first_loop_iteration, pixel_indices, verbose) {
   # take a random sample if that was applied
   if (sample_size < 1) {
-    sample_indices <- sample(seq_len(nrow(current_tile_feature_dataset)), max(round(nrow(current_tile_feature_dataset) * sample_size), 1))
+    sample_indices <- sample(
+      seq_len(nrow(current_tile_feature_dataset)),
+      max(round(nrow(current_tile_feature_dataset) * sample_size), 1)
+    )
     current_tile_feature_dataset <- current_tile_feature_dataset[sample_indices, ]
     filtered_indices <- filtered_indices[sample_indices]
   }
@@ -382,23 +401,35 @@ sample_and_combine_data <- function(date, current_tile_feature_dataset, feature_
     } else {
       pixel_indices <- c(pixel_indices, filtered_indices + length(pixel_indices))
       common_cols <- intersect(colnames(current_tile_feature_dataset), colnames(feature_dataset))
-      notin1 <- colnames(current_tile_feature_dataset)[which(!(colnames(current_tile_feature_dataset) %in% common_cols))]
+      notin1 <- colnames(current_tile_feature_dataset)[which(
+        !(colnames(current_tile_feature_dataset) %in% common_cols)
+      )]
       notin2 <- colnames(feature_dataset)[which(!(colnames(feature_dataset) %in% common_cols))]
       if (length(c(notin1, notin2)) > 0) {
-        ff_cat(paste(date, ": the following columns are dropped because they are not present in the entire time series: ", paste(c(notin1, notin2),
-          collapse = ", "
-        )), color = "yellow", verbose = verbose)
+        ff_cat(paste(
+          date, ": the following columns are dropped because
+                     they are not present in the entire time series: ",
+          paste(c(notin1, notin2),
+            collapse = ", "
+          )
+        ), color = "yellow", verbose = verbose, log_level = "WARNING")
       }
 
       # Subset matrices based on common column names
       # Merge matrices by column names
-      feature_dataset <- rbind(feature_dataset[, common_cols, drop = FALSE], current_tile_feature_dataset[, common_cols, drop = FALSE])
+      feature_dataset <- rbind(
+        feature_dataset[, common_cols, drop = FALSE],
+        current_tile_feature_dataset[, common_cols, drop = FALSE]
+      )
     }
     feature_dataset <- feature_dataset[, order(colnames(feature_dataset))]
     first_loop_iteration <- FALSE
   }
 
-  return(list(feature_dataset = feature_dataset, pixel_indices = pixel_indices, first_loop_iteration = first_loop_iteration))
+  return(list(
+    feature_dataset = feature_dataset, pixel_indices = pixel_indices,
+    first_loop_iteration = first_loop_iteration
+  ))
 }
 
 create_validation_sample <- function(feature_dataset, data_label, validation_sample) {
@@ -414,7 +445,8 @@ create_validation_sample <- function(feature_dataset, data_label, validation_sam
   return(list(feature_dataset = train_matrix, validation_matrix = validation_matrix))
 }
 
-split_feature_and_label_data <- function(feature_dataset, groundtruth_pattern, label_threshold, groundtruth_raster, verbose) {
+split_feature_and_label_data <- function(feature_dataset, groundtruth_pattern,
+                                         label_threshold, groundtruth_raster, verbose) {
   groundtruth_index <- which(colnames(feature_dataset) == groundtruth_pattern)
 
   if (length(groundtruth_index) == 1) {
@@ -429,7 +461,7 @@ split_feature_and_label_data <- function(feature_dataset, groundtruth_pattern, l
     # Remove groundtruth column from features
     feature_dataset <- feature_dataset[, -groundtruth_index]
   } else {
-    ff_cat("No groundtruth rasters found", color = "yellow", verbose = verbose)
+    ff_cat("No groundtruth rasters found", color = "yellow", verbose = verbose, log_level = "WARNING")
     data_label <- NA
   }
 
@@ -464,7 +496,10 @@ process_tile_data <- function(tiles, list_of_feature_files, shape,
 
     ff_cat("loading finished, features:", paste(feature_names, collapse = ", "), verbose = verbose)
   }
-  return(list(feature_dataset = feature_dataset, pixel_indices = pixel_indices, groundtruth_raster = groundtruth_raster, has_groundtruth = has_groundtruth))
+  return(list(
+    feature_dataset = feature_dataset, pixel_indices = pixel_indices,
+    groundtruth_raster = groundtruth_raster, has_groundtruth = has_groundtruth
+  ))
 }
 
 process_tile_dates <- function(tiles, tile, current_tile_files, shape, shrink, window, groundtruth_pattern,
@@ -480,26 +515,42 @@ process_tile_dates <- function(tiles, tile, current_tile_files, shape, shrink, w
     if (length(tiles) > 1) {
       groundtruth_raster <- NA
     } else {
-      groundtruth_result <- load_groundtruth_raster(selected_files, groundtruth_pattern, first_loop_iteration, verbose, extent, has_groundtruth)
+      groundtruth_result <- load_groundtruth_raster(
+        selected_files, groundtruth_pattern, first_loop_iteration,
+        verbose, extent, has_groundtruth
+      )
       groundtruth_raster <- groundtruth_result$groundtruth_raster
       has_groundtruth <- groundtruth_result$has_groundtruth
       first_loop_iteration <- groundtruth_result$first_loop_iteration
     }
-    current_tile_feature_dataset <- transform_raster_to_dataset(rasstack, shape, shrink, add_xy, current_tile_feature_dataset) # the most memory consumptive function
+    current_tile_feature_dataset <- transform_raster_to_dataset(
+      rasstack, shape,
+      shrink, add_xy, current_tile_feature_dataset
+    ) # the most memory consumptive function
     gc() # garbage collection: to free up memory usage
     # Add date features if necessary
-    feature_names <- feature_names <- gsub(".tif", "", sapply(basename(selected_files), function(x) strsplit(x, "_")[[1]][4]))
+    feature_names <- feature_names <- gsub(
+      ".tif", "",
+      sapply(basename(selected_files), function(x) strsplit(x, "_")[[1]][4])
+    )
     colnames(current_tile_feature_dataset)[seq_along(feature_names)] <- feature_names
     if (add_date) {
       current_tile_feature_dataset <- append_date_based_features(current_tile_feature_dataset, date)
     }
     # filter on filter conditions
 
-    feature_filter_result <- filter_by_feature(filter_features, filter_conditions, current_tile_feature_dataset, verbose = verbose)
+    feature_filter_result <- filter_by_feature(filter_features,
+      filter_conditions, current_tile_feature_dataset,
+      verbose = verbose
+    )
     current_tile_feature_dataset <- feature_filter_result$filtered_matrix
     filtered_indices <- feature_filter_result$filtered_indices
 
-    combine_result <- sample_and_combine_data(date, current_tile_feature_dataset, feature_dataset, filtered_indices, sample_size, first_loop_iteration, pixel_indices, verbose = verbose)
+    combine_result <- sample_and_combine_data(date, current_tile_feature_dataset, feature_dataset,
+      filtered_indices, sample_size, first_loop_iteration,
+      pixel_indices,
+      verbose = verbose
+    )
     feature_dataset <- combine_result$feature_dataset
     pixel_indices <- combine_result$pixel_indices
     first_loop_iteration <- combine_result$first_loop_iteration
@@ -541,7 +592,9 @@ filter_by_feature <- function(filter_features, filter_conditions, matrix, verbos
       value <- as.numeric(gsub("[^0-9]", "", filter_conditions[i]))
       filtercolumn <- which(colnames(matrix) == filter_features[i])
       if (length(filtercolumn) == 0) {
-        ff_cat("The feature", filter_features[i], "was not found, skipping filtering for this feature", color = "yellow")
+        ff_cat("The feature", filter_features[i], "was not found, skipping filtering for this feature",
+          color = "yellow", log_level = "WARNING"
+        )
         spatial_indices <- seq(dim(matrix)[1])
       } else {
         ff_cat("filtering feature", filter_features[i], "on", filter_conditions[i], verbose = verbose)

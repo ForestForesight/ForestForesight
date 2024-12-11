@@ -5,6 +5,7 @@
 #' various folders and files required for ForestForesight operations.
 #'
 #' @param shape A SpatVector object representing the area of interest.
+#' @param country The ISO-3 code of a country for which you want to do the structure check.
 #' @param folder_path Character string. Path to the main ForestForesight folder.
 #' @param check_date Character string. Date to check for in the format "YYYY-MM-DD".
 #'        If NULL, uses the first of the current month.
@@ -19,13 +20,24 @@
 #' @importFrom lubridate floor_date
 #'
 #' @export
-ff_structurecheck <- function(shape,
-                              folder_path,
+ff_structurecheck <- function(shape = NULL,
+                              country = Sys.getenv("DEFAULT_COUNTRY"),
+                              folder_path = Sys.getenv("FF_FOLDER"),
                               check_date = NULL,
                               error_on_issue = FALSE,
                               silent_on_pass = FALSE,
-                              groundtruth_pattern = "groundtruth6m") {
+                              groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH")) {
   # Get info from shape
+  if (!has_value(shape)) {
+    if (!has_value(country)) {
+      stop("either a country should be given or a shape in the form of a SpatVector")
+    }
+    countrylist <- get(data(countries, envir = environment()))
+    shape <- vect(countrylist)[which(countrylist$iso3 == country)]
+    if (nrow(shape) == 0) {
+      stop("incorrect country name, check iso-3 codes")
+    }
+  }
   info <- get_info(shape, verbose = FALSE)
 
   # Set check_date if not provided
@@ -158,7 +170,8 @@ check_groundtruth <- function(files, tile, check_date, silent_on_pass, groundtru
   }
 }
 
-check_preprocessed_folders <- function(folder_path, info, check_date, error_on_issue, silent_on_pass, groundtruth_pattern) {
+check_preprocessed_folders <- function(folder_path, info,
+                                       check_date, error_on_issue, silent_on_pass, groundtruth_pattern) {
   ff_cat("Checking preprocessed folder", verbose = !silent_on_pass)
   prep_subfolders <- c("input", "groundtruth")
 
@@ -173,7 +186,10 @@ check_preprocessed_folders <- function(folder_path, info, check_date, error_on_i
         color = "green",
         silent_on_pass = silent_on_pass
       )
-      check_tile_subfolders(folder, info, subfolder, check_date, error_on_issue, silent_on_pass, groundtruth_pattern = groundtruth_pattern)
+      check_tile_subfolders(folder, info, subfolder, check_date,
+        error_on_issue, silent_on_pass,
+        groundtruth_pattern = groundtruth_pattern
+      )
     }
   }
 }
@@ -318,6 +334,7 @@ print_result <- function(...,
     invisible(NULL)
   } else {
     if (color == "red" && error_on_issue) {
+      ff_cat(statement, verbose = FALSE, log_level = "ERROR")
       stop(statement)
     } else {
       ff_cat(statement, color = color, verbose = TRUE)
