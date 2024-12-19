@@ -1,6 +1,3 @@
-URL_MARKDOWN: https://raw.githubusercontent.com/jduijvenbode-WWF/ForestForesight/main/README.md
-AWS_BUCKET_NAME: forestforesight-public
-AWS_BUCKET_REGION: eu-west-1
 EARLIEST_DATA_DATE: '2021-01-01'
 FF_FOLDER:
 DEFAULT_THRESHOLD: 0.5

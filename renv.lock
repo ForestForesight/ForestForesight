@@ -138,6 +138,17 @@
       ],
       "Hash": "6b868847b365672d6c1677b1608da9ed"
     },
+    "RcppTOML": {
+      "Package": "RcppTOML",
+      "Version": "0.2.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "Rcpp"
+      ],
+      "Hash": "c232938949fcd8126034419cc529333a"
+    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.2.1",
@@ -571,6 +582,18 @@
       ],
       "Hash": "bd1297f9b5b1fc1372d19e2c4cd82215"
     },
+    "forge": {
+      "Package": "forge",
+      "Version": "0.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "magrittr",
+        "rlang"
+      ],
+      "Hash": "b98a63142d3aa952bb551968fea8a56c"
+    },
     "fs": {
       "Package": "fs",
       "Version": "1.6.5",
@@ -625,6 +648,18 @@
         "rlang"
       ],
       "Hash": "fbbbc48eba7a6626a08bb365e44b563b"
+    },
+    "git2r": {
+      "Package": "git2r",
+      "Version": "0.35.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "graphics",
+        "utils"
+      ],
+      "Hash": "8828605664949b92d0bf3f931e7c431b"
     },
     "gitcreds": {
       "Package": "gitcreds",
@@ -930,6 +965,34 @@
       ],
       "Hash": "fec5f52652d60615fdb3957b3d74324a"
     },
+    "mlflow": {
+      "Package": "mlflow",
+      "Version": "2.18.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "base64enc",
+        "forge",
+        "fs",
+        "git2r",
+        "glue",
+        "httpuv",
+        "httr",
+        "ini",
+        "jsonlite",
+        "openssl",
+        "processx",
+        "purrr",
+        "rlang",
+        "swagger",
+        "tibble",
+        "withr",
+        "yaml",
+        "zeallot"
+      ],
+      "Hash": "08a7e58b5fd4170aff48bae1366dc76b"
+    },
     "openssl": {
       "Package": "openssl",
       "Version": "2.2.2",
@@ -1033,6 +1096,16 @@
         "withr"
       ],
       "Hash": "2ec30ffbeec83da57655b850cf2d3e0e"
+    },
+    "png": {
+      "Package": "png",
+      "Version": "0.1-8",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "bd54ba8a0a5faded999a7aab6e46b374"
     },
     "praise": {
       "Package": "praise",
@@ -1197,6 +1270,28 @@
         "utils"
       ],
       "Hash": "47623f66b4e80b3b0587bc5d7b309888"
+    },
+    "reticulate": {
+      "Package": "reticulate",
+      "Version": "1.40.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Matrix",
+        "R",
+        "Rcpp",
+        "RcppTOML",
+        "graphics",
+        "here",
+        "jsonlite",
+        "methods",
+        "png",
+        "rappdirs",
+        "rlang",
+        "utils",
+        "withr"
+      ],
+      "Hash": "04740f615607c4e6099356ff6d6694ee"
     },
     "rex": {
       "Package": "rex",
@@ -1464,6 +1559,13 @@
         "withr"
       ],
       "Hash": "93a2b1beac2437bdcc4724f8bf867e2c"
+    },
+    "swagger": {
+      "Package": "swagger",
+      "Version": "5.17.14.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "cd09053b2f1e87c0fa6c1c470e54ebb8"
     },
     "sys": {
       "Package": "sys",
@@ -1782,6 +1884,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "51dab85c6c98e50a18d7551e9d49f76c"
+    },
+    "zeallot": {
+      "Package": "zeallot",
+      "Version": "0.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "ee9b643aa8331c45d8d82eb3a137c9bc"
     },
     "zip": {
       "Package": "zip",

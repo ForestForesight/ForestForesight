@@ -72,8 +72,8 @@
 #'
 #' @keywords machine-learning prediction forestry raster
 
-ff_run <- function(shape = NULL, country = Sys.getenv("DEFAULT_COUNTRY"), prediction_dates = NULL,
-                   ff_folder = Sys.getenv("FF_FOLDER"),
+ff_run <- function(shape = NULL, country = get_variable("DEFAULT_COUNTRY"), prediction_dates = NULL,
+                   ff_folder = get_variable("FF_FOLDER"),
                    train_dates = NULL,
                    validation_dates = NULL,
                    model_save_path = NULL,
@@ -81,15 +81,15 @@ ff_run <- function(shape = NULL, country = Sys.getenv("DEFAULT_COUNTRY"), predic
                    pretrained_model_path = NULL,
                    ff_prep_parameters = NULL,
                    ff_train_parameters = NULL,
-                   certainty_threshold = as.numeric(Sys.getenv("DEFAULT_THRESHOLD")),
-                   filter_features = Sys.getenv("FOREST_MASK"),
-                   filter_conditions = Sys.getenv("FOREST_MASK_FILTER"),
+                   certainty_threshold = get_variable("DEFAULT_THRESHOLD"),
+                   filter_features = get_variable("FOREST_MASK"),
+                   filter_conditions = get_variable("FOREST_MASK_FILTER"),
                    accuracy_output_path = NULL,
                    importance_output_path = NULL,
                    verbose = TRUE,
                    autoscale_sample = FALSE,
                    validation = FALSE,
-                   groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH")) {
+                   groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH")) {
   fixed_sample_size <- 6e6
 
   corrected_date_input <- check_dates(
@@ -331,8 +331,10 @@ check_folder_and_input <- function(ff_folder, country, shape, train_dates, predi
   }
 
 
-  if ((has_value(shape) + has_value(country)) != 1) {
+  if (xor(has_value(shape), has_value(country))) {
+    if (!country == get_variable("DEFAULT_COUNTRY")) {
     ff_cat("the input shape is given precedence over the country code")
+    }
   }
   if (has_value(shape)) {
     ForestForesight::check_spatvector(shape,

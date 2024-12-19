@@ -7,7 +7,7 @@
 ff_predict(
   model,
   test_matrix,
-  thresholds = as.numeric(Sys.getenv("DEFAULT_THRESHOLD")),
+  thresholds = get_variable("DEFAULT_THRESHOLD"),
   groundtruth = NA,
   indices = NA,
   templateraster = NA,

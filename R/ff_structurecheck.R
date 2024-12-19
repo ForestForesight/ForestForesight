@@ -21,12 +21,12 @@
 #'
 #' @export
 ff_structurecheck <- function(shape = NULL,
-                              country = Sys.getenv("DEFAULT_COUNTRY"),
-                              folder_path = Sys.getenv("FF_FOLDER"),
+                              country = get_variable("DEFAULT_COUNTRY"),
+                              folder_path = get_variable("FF_FOLDER"),
                               check_date = NULL,
                               error_on_issue = FALSE,
                               silent_on_pass = FALSE,
-                              groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH")) {
+                              groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH")) {
   # Get info from shape
   if (!has_value(shape)) {
     if (!has_value(country)) {

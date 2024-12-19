@@ -13,6 +13,7 @@ ff_polygonize(
   smoothness = 2,
   verbose = FALSE,
   calculate_max_count = FALSE,
+  max_polygons = NULL,
   contain_polygons = NA
 )
 }
@@ -37,30 +38,81 @@ Valid options are:
 
 \item{verbose}{Logical. Whether to print progress messages. Default is FALSE}
 
-\item{calculate_max_count}{Logical. If TRUE, outputs a reasonable number of polygons
-based on area size. Default is FALSE}
+\item{calculate_max_count}{Logical. If TRUE, automatically scales the number of output polygons
+based on area size. Uses a power-law scaling that produces approximately:
+* 2000 polygons for Brazil-sized areas (~850M ha)
+* 1200 polygons for Indonesia-sized areas (~180M ha)
+* 500 polygons for Colombia-sized areas (~110M ha)
+* 150 polygons for Cambodia-sized areas (~18M ha)
+* 50-100 polygons for small areas (<5M ha)}
 
-\item{contain_polygons}{SpatVector. If provided with calculate_max_count=TRUE,
-only creates polygons within this boundary}
+\item{max_polygons}{Numeric. Optional manual override for maximum number of polygons.
+Cannot be used together with calculate_max_count=TRUE.}
+
+\item{contain_polygons}{SpatVector. Optional polygon boundary to restrict output.
+When provided, only creates polygons within this boundary.}
 }
 \value{
-A SpatVector object containing the processed and simplified polygons,
-  or NULL if no polygons were generated
+A list containing:
+  * polygons: A SpatVector object containing the processed and simplified polygons,
+    with attributes for risk level and area statistics. NULL if no polygons were generated.
+  * max_count: The maximum polygon count used for filtering (only when calculate_max_count=TRUE
+    or max_polygons is specified)
 }
 \description{
-This function processes a raster file, applies thresholds, creates polygons,
-and simplifies them based on various parameters.
+Converts a raster file into polygons representing different risk levels for forest disturbance.
+The function processes the input raster by applying thresholds, smoothing, and creating simplified
+polygons based on various parameters. The number of output polygons can be automatically scaled
+based on the area size or manually specified.
 }
+\details{
+The function implements a multi-step process:
+1. Validates inputs and loads the raster
+2. Processes the raster using the specified threshold and window size
+3. Generates polygons with smoothing
+4. Applies maximum count filtering if requested
+5. Adds attributes including risk levels and area statistics
+
+The number of output polygons can be controlled in two ways:
+* Automatic scaling using calculate_max_count=TRUE
+* Manual specification using max_polygons parameter
+
+These options are mutually exclusive and will raise an error if both are provided.
+}
+\section{Warning}{
+
+When using character-based thresholds ("medium", "high", "very high"), the actual
+numeric threshold is automatically determined based on the raster values distribution.
+}
+
 \examples{
 \dontrun{
 # Basic usage with default parameters
 result <- ff_polygonize("input.tif")
 
-# Save output with custom threshold
-ff_polygonize("input.tif",
-  output_file = "risk_areas.shp",
-  threshold = "high"
+# Save high-risk areas with automatic polygon count scaling
+result <- ff_polygonize("input.tif",
+  output_file = "high_risk.shp",
+  threshold = "high",
+  calculate_max_count = TRUE
+)
+
+# Specify exact number of polygons
+result <- ff_polygonize("input.tif",
+  threshold = 0.7,
+  max_polygons = 500
+)
+
+# Use with boundary constraint
+boundary <- vect("country_boundary.shp")
+result <- ff_polygonize("input.tif",
+  calculate_max_count = TRUE,
+  contain_polygons = boundary
 )
 }
 
+}
+\seealso{
+[smoothr::ksmooth()] for details on the smoothing algorithm
+[terra::focal()] for details on focal operations
 }
