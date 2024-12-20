@@ -13,6 +13,7 @@ ff_run(
   validation_dates = NULL,
   model_save_path = NULL,
   predictions_save_path = NULL,
+  risk_zones_save_path = NULL,
   pretrained_model_path = NULL,
   ff_prep_parameters = NULL,
   ff_train_parameters = NULL,
@@ -46,6 +47,9 @@ dates should be a vector with the format YYYY-MM-DD with DD being 01}
 
 \item{predictions_save_path}{Path to save the predictions (with extension ".tif"). Default is NULL.}
 
+\item{risk_zones_save_path}{Path to save the predictions as risk zones (with extension ".shp").
+This implements the standard settings of ff_polygonize. Default is NULL.}
+
 \item{pretrained_model_path}{Pre-trained model object or path to saved model.
 If NULL, a new model will be trained. Default is NULL.}
 
@@ -77,6 +81,7 @@ which is set at 0.25 of the training matrix. Should not be set if validation_dat
 A list containing:
   \item{prediction_timeseries}{A SpatRaster object or RasterStack containing the predicted deforestation
         probabilities for each prediction date}
+  \item{risk_zones}{A nested list with per date three SpatVectors on Medium, High and Very High Risk level risk zones}
   \item{shape}{The SpatVector object used for analysis, either from direct input or derived from country code}
   \item{model}{Path to the model used for predictions (either newly trained or pretrained)}
   \item{accuracy_dataframe}{A SpatialPolygonsDataFrame containing accuracy metrics for each analyzed area.
