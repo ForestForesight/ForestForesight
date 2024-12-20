@@ -1011,7 +1011,7 @@ get_feature_importance <- function(importance_output_path, model_save_path, pret
 modify_filepath <- function(filepath, risk_level, date = NULL) {
   if (!has_value(filepath)) {
     return(NULL)
-    }
+  }
   dir_path <- dirname(filepath)
   base_name <- tools::file_path_sans_ext(basename(filepath))
   ext <- tools::file_ext(filepath)
@@ -1047,7 +1047,7 @@ process_risk_level <- function(raster_layer, output_path, risk_level,
 
   risk_result <- ff_polygonize(
     raster_layer,
-    threshold = gsub("_"," ",risk_level),
+    threshold = gsub("_", " ", risk_level),
     output_file = output_file,
     verbose = TRUE,
     max_polygons = max_polygons,
