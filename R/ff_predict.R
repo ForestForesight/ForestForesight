@@ -133,7 +133,7 @@ remove_extra_features <- function(test_matrix, loaded_model) {
 #' @noRd
 calculate_metrics <- function(predictions, groundtruth, thresholds, verbose) {
   if (!has_value(groundtruth)) {
-    ff_cat("no groundtruth found, returning NA for precision, recall and F0.5")
+    ff_cat("no groundtruth found, returning NA for precision, recall and F0.5", verbose = verbose)
     return(list(precision = NA, recall = NA, accuracy_f05 = NA))
   }
   ff_cat("calculating scores", verbose = verbose)

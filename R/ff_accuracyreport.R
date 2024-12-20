@@ -55,39 +55,11 @@ ff_accuracyreport <- function(accuracy_data = NULL,
     results_by_date <- calculate_metrics_by_date(results)
   }
 
-  # Function to create the plots
-  create_plots <- function() {
-    # Set up layout based on available data
-    if (!is.null(results) && !is.null(importance_results)) {
-      layout(matrix(c(1, 2, 3, 3), nrow = 2, ncol = 2, byrow = TRUE))
-    } else if (!is.null(results)) {
-      layout(matrix(c(1, 2), nrow = 1, ncol = 2, byrow = TRUE))
-    } else {
-      # Only importance plot
-      layout(matrix(1, nrow = 1, ncol = 1))
-    }
-
-    # Create plots based on available data
-    plots <- list()
-    if (!is.null(results)) {
-      plots$map <- create_f05_map(spatial_data)
-      plots$metrics <- create_metrics_plot(results_by_date)
-    }
-
-    if (!is.null(importance_results)) {
-      plots$importance <- create_importance_plot(importance_results)
-    }
-
-    # Add title
-    mtext(title, outer = TRUE, line = -2, cex = 1.5)
-    return(plots)
-  }
-
   # Create plots in different devices based on parameters
   if (!is.null(output_path)) {
     output_path <- sub("\\.pdf$", ".png", output_path)
     png(output_path, width = 16.5, height = 11.7, units = "in", res = 300)
-    plots <- create_plots()
+    plots <- create_plots(results, importance_results, spatial_data, results_by_date, title)
     dev.off()
   }
 
@@ -107,63 +79,7 @@ ff_accuracyreport <- function(accuracy_data = NULL,
         symbolfamily = "default")
   }
 
-  plots <- create_plots()
-}
-#' Load and Process Accuracy Data
-#'
-#' @param accuracy_data List of file paths, data frame, or SpatVector
-#' @return Data frame of processed accuracy data, with optional geometry column
-#' @import terra
-#' @keywords internal
-#' @noRd
-load_accuracy_data <- function(accuracy_data) {
-  if (is.null(accuracy_data)) {
-    return(NULL)
-  }
-
-  # Handle different input types
-  if (is.data.frame(accuracy_data)) {
-    results <- accuracy_data
-  } else if (inherits(accuracy_data, "SpatVector")) {
-    # Convert SpatVector to data.frame while preserving geometry as WKT
-    results <- as.data.frame(accuracy_data)
-    results$geom <- terra::geom(accuracy_data, wkt=TRUE)
-  } else if (is.character(accuracy_data)) {
-    results <- do.call(rbind, lapply(accuracy_data, read.csv))
-  } else {
-    stop("accuracy_data must be either a data frame, SpatVector, or vector of file paths")
-  }
-
-  # Check for required accuracy metric columns
-  required_metrics <- c("TP", "FP", "TN", "FN")
-  if (!all(required_metrics %in% names(results))) {
-    missing_metrics <- setdiff(required_metrics, names(results))
-    stop(sprintf(
-      "Missing required accuracy metric columns: %s",
-      paste(missing_metrics, collapse = ", ")
-    ))
-  }
-
-  # Only create UUID if it doesn't exist
-  if (!"UUID" %in% names(results)) {
-    # Check if required columns exist
-    if (!all(c("iso3", "coordname") %in% names(results))) {
-      missing_cols <- setdiff(c("iso3", "coordname"), names(results))
-      stop(sprintf(
-        "Cannot create UUID column. Missing required columns: %s. Either provide these columns or include a pre-computed UUID column.",
-        paste(missing_cols, collapse = ", ")
-      ))
-    }
-    results$UUID <- paste0(results$iso3, "_", results$coordname)
-    ff_cat("UUID column created from iso3 and coordname columns", color="yellow")
-  }
-
-  # Rename 'name' to 'country' if it exists
-  if ("name" %in% names(results)) {
-    names(results)[which(names(results) == "name")] <- "country"
-  }
-
-  return(results)
+  plots <- create_plots(results, importance_results, spatial_data, results_by_date, title)
 }
 
 #' Load and Process Importance Data
@@ -455,4 +371,65 @@ plot_importance_data <- function(importance_data) {
        ny = NA,
        lty = 2,
        col = "gray")
+}
+
+
+#' Create Forest Foresight Analysis Plots
+#'
+#' Creates multiple plots for visualizing Forest Foresight model results, including
+#' accuracy metrics and feature importance if available. Can create plots for accuracy
+#' data only, importance data only, or both.
+#'
+#' @param results Data frame containing accuracy metrics or NULL. Required columns if provided:
+#' TP, FP, TN, FN, UUID
+#' @param importance_results Data frame containing feature importance data or NULL.
+#' Required columns if provided: feature, importance
+#' @param spatial_data Spatial data containing F0.5 scores. Required if results is not NULL
+#' @param results_by_date Data frame with temporal metrics. Required if results is not NULL
+#' @param title Character string for the overall plot title
+#'
+#' @return A list containing the created plot objects:
+#' \itemize{
+#'   \item map - F0.5 score distribution map (if results provided)
+#'   \item metrics - Temporal metrics plot (if results provided)
+#'   \item importance - Feature importance plot (if importance_results provided)
+#' }
+#'
+#' @keywords internal
+#' @noRd
+create_plots <- function(results = NULL,
+                         importance_results = NULL,
+                         spatial_data = NULL,
+                         results_by_date = NULL,
+                         title = "Accuracy Analysis: Forest Foresight") {
+
+  # Input validation
+  if (!is.null(results) && (is.null(spatial_data) || is.null(results_by_date))) {
+    stop("If results is provided, spatial_data and results_by_date must also be provided")
+  }
+
+  # Set up layout based on available data
+  if (!is.null(results) && !is.null(importance_results)) {
+    layout(matrix(c(1, 2, 3, 3), nrow = 2, ncol = 2, byrow = TRUE))
+  } else if (!is.null(results)) {
+    layout(matrix(c(1, 2), nrow = 1, ncol = 2, byrow = TRUE))
+  } else {
+    # Only importance plot
+    layout(matrix(1, nrow = 1, ncol = 1))
+  }
+
+  # Create plots based on available data
+  plots <- list()
+  if (!is.null(results)) {
+    plots$map <- create_f05_map(spatial_data)
+    plots$metrics <- create_metrics_plot(results_by_date)
+  }
+
+  if (!is.null(importance_results)) {
+    plots$importance <- create_importance_plot(importance_results)
+  }
+
+  # Add title
+  mtext(title, outer = TRUE, line = -2, cex = 1.5)
+  return(plots)
 }
