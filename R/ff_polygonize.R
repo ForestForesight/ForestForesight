@@ -152,7 +152,7 @@ ff_polygonize <- function(input_raster,
     processed_raster$final_threshold
   )
 
-  if (!is.na(output_file)) {
+  if (has_value(output_file)) {
     ff_cat("writing", length(polygons), "polygons to", output_file,
       verbose = verbose
     )
