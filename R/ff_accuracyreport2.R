@@ -39,8 +39,7 @@ ff_accuracyreport <- function(accuracy_data = NULL,
                               importance_data = NULL,
                               output_path = NULL,
                               title = "Accuracy Analysis: Forest Foresight",
-                              return_plot = FALSE) {
-
+                              new_window = FALSE) {
   # Load and prepare data
   results <- load_accuracy_data(accuracy_data)
   importance_results <- load_importance_data(importance_data)
@@ -51,47 +50,60 @@ ff_accuracyreport <- function(accuracy_data = NULL,
   # Calculate metrics by date
   results_by_date <- calculate_metrics_by_date(results)
 
-  # Initialize plotting device if output path is provided
+  # Function to create the plots
+  create_plots <- function() {
+    # Set up layout
+    setup_plot_layout(importance_results)
+
+    # Create plots
+    plots <- list()
+    plots$map <- create_f05_map(spatial_data)
+    plots$metrics <- create_metrics_plot(results_by_date)
+
+    if (!is.null(importance_results)) {
+      plots$importance <- create_importance_plot(importance_results)
+    }
+
+    # Add title
+    mtext(title, outer = TRUE, line = -2, cex = 1.5)
+
+    return(plots)
+  }
+
+  # Create plots in different devices based on parameters
   if (!is.null(output_path)) {
     output_path <- sub("\\.pdf$", ".png", output_path)
     png(output_path, width = 16.5, height = 11.7, units = "in", res = 300)
-  }
-
-  # Set up layout
-  setup_plot_layout(importance_results)
-
-  # Create plots
-  plots <- list()
-  plots$map <- create_f05_map(spatial_data)
-  plots$metrics <- create_metrics_plot(results_by_date)
-
-  if (!is.null(importance_results)) {
-    plots$importance <- create_importance_plot(importance_results)
-  }
-
-  # Add title
-  mtext(title, outer = TRUE, line = -2, cex = 1.5)
-
-  # Close device if output path was provided
-  if (!is.null(output_path)) {
+    plots <- create_plots()
     dev.off()
   }
 
-  # Return plots if requested
-  if (return_plot) {
-    return(plots)
+  if (new_window) {
+    X11(width = 16.5, height = 11.7,
+        pointsize = 12,
+        gamma = 1,
+        bg = "white",
+        canvas = "white",
+        fonts = NULL,
+        family = "",
+        xpos = NA,
+        ypos = NA,
+        title = title,
+        type = "cairo",
+        antialias = "default",
+        symbolfamily = "default")
   }
+  plots <- create_plots()
+
+  # Return plots if requested
+
 }
 
 #' Load and Process Accuracy Data
 #'
-#' @param accuracy_data List of file paths or data frame
-#' @return Data frame of processed accuracy data
-#' @keywords internal
-#' Load and Process Accuracy Data
-#'
-#' @param accuracy_data List of file paths or data frame
-#' @return Data frame of processed accuracy data
+#' @param accuracy_data List of file paths, data frame, or SpatVector
+#' @return Data frame of processed accuracy data, with optional geometry column
+#' @import terra
 #' @keywords internal
 #' @noRd
 load_accuracy_data <- function(accuracy_data) {
@@ -99,12 +111,17 @@ load_accuracy_data <- function(accuracy_data) {
     stop("Accuracy data must be provided")
   }
 
+  # Handle different input types
   if (is.data.frame(accuracy_data)) {
     results <- accuracy_data
+  } else if (inherits(accuracy_data, "SpatVector")) {
+    # Convert SpatVector to data.frame while preserving geometry as WKT
+    results <- as.data.frame(accuracy_data)
+    results$geom <- terra::geom(accuracy_data, wkt=TRUE)
   } else if (is.character(accuracy_data)) {
     results <- do.call(rbind, lapply(accuracy_data, read.csv))
   } else {
-    stop("accuracy_data must be either a data frame or vector of file paths")
+    stop("accuracy_data must be either a data frame, SpatVector, or vector of file paths")
   }
 
   # Only create UUID if it doesn't exist
@@ -118,7 +135,7 @@ load_accuracy_data <- function(accuracy_data) {
       ))
     }
     results$UUID <- paste0(results$iso3, "_", results$coordname)
-    warning("UUID column created from iso3 and coordname columns")
+    ff_cat("UUID column created from iso3 and coordname columns",color="yellow")
   }
 
   # Rename 'name' to 'country' if it exists
@@ -153,18 +170,18 @@ load_importance_data <- function(importance_data) {
 
 #' Calculate Accuracy Metrics
 #'
-#' @param true_positives Numeric value of true positives
-#' @param false_positives Numeric value of false positives
-#' @param true_negatives Numeric value of true negatives
-#' @param false_negatives Numeric value of false negatives
+#' @param TP Numeric value of true positives
+#' @param FP Numeric value of false positives
+#' @param TN Numeric value of true negatives
+#' @param FN Numeric value of false negatives
 #' @return Vector of calculated metrics
 #' @keywords internal
 #' @noRd
-calculate_metrics <- function(true_positives, false_positives, true_negatives, false_negatives) {
-  precision <- true_positives / (true_positives + false_positives)
-  recall <- true_positives / (true_positives + false_negatives)
+calculate_metrics <- function(TP, FP, TN, FN) {
+  precision <- TP / (TP + FP)
+  recall <- TP / (TP + FN)
   f0_5_score <- (1.25 * precision * recall) / (0.25 * precision + recall)
-  events <- true_positives + false_negatives
+  events <- TP + FN
   return(c(precision = precision, recall = recall, F0.5 = f0_5_score, events = events))
 }
 
@@ -179,12 +196,12 @@ prepare_spatial_data <- function(results) {
   pols$UUID <- paste0(pols$iso3, "_", pols$coordname)
 
   results_by_uuid <- aggregate(
-    cbind(true_positives, false_positives, true_negatives, false_negatives) ~ UUID,
+    cbind(TP, FP, TN, FN) ~ UUID,
     data = results, FUN = sum
   )
 
   metrics_by_uuid <- t(apply(
-    results_by_uuid[, c("true_positives", "false_positives", "true_negatives", "false_negatives")],
+    results_by_uuid[, c("TP", "FP", "TN", "FN")],
     1,
     function(row) calculate_metrics(row[1], row[2], row[3], row[4])
   ))
@@ -206,12 +223,12 @@ prepare_spatial_data <- function(results) {
 #' @noRd
 calculate_metrics_by_date <- function(results) {
   results_by_date <- aggregate(
-    cbind(true_positives, false_positives, true_negatives, false_negatives) ~ date,
+    cbind(TP, FP, TN, FN) ~ date,
     data = results, FUN = sum
   )
 
   metrics_by_date <- as.data.frame(t(apply(
-    results_by_date[, c("true_positives", "false_positives", "true_negatives", "false_negatives")],
+    results_by_date[, c("TP", "FP", "TN", "FN")],
     1,
     function(row) calculate_metrics(row[1], row[2], row[3], row[4])
   )))
