@@ -47,7 +47,7 @@ load_variables <- function(config_file) {
           }
           library(base)
           do.call(Sys.setenv, stats::setNames(list(value), var_name))
-          message(var_name,": ",value)
+          message(var_name, ": ", value)
         }
       }
     }
