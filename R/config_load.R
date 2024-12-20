@@ -32,6 +32,7 @@ load_variables <- function(config_file) {
   # Load the YML file
   config <- yaml::yaml.load_file(config_file)
   set_env_vars <- function(config_list, prefix = "") {
+    message("setting environment variables")
     for (name in names(config_list)) {
       value <- config_list[[name]]
       var_name <- paste0(prefix, toupper(name))
@@ -46,6 +47,7 @@ load_variables <- function(config_file) {
           }
           library(base)
           do.call(Sys.setenv, stats::setNames(list(value), var_name))
+          message(var_name,": ",value)
         }
       }
     }
