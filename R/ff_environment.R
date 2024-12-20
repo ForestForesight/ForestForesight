@@ -270,9 +270,6 @@ parameter_validators <- list(
 #' Parameter descriptions
 #' @noRd
 parameter_descriptions <- list(
-  URL_MARKDOWN = "URL to the project's README file",
-  AWS_BUCKET_NAME = "Name of the AWS S3 bucket containing ForestForesight data",
-  AWS_BUCKET_REGION = "AWS region where the bucket is located",
   EARLIEST_DATA_DATE = "Earliest date for which data should be processed (YYYY-MM-DD)",
   DEFAULT_GROUNDTRUTH = "Default groundtruth pattern (groundtruth1m/3m/6m/12m)",
   FOREST_MASK = "Default forest mask feature (your own or downloaded from the FF repository",

@@ -82,9 +82,9 @@
 #'
 #' @keywords machine-learning data-preparation forestry
 
-ff_prep <- function(datafolder = Sys.getenv("FF_FOLDER"), country = Sys.getenv("DEFAULT_COUNTRY"),
+ff_prep <- function(datafolder = get_variable("FF_FOLDER"), country = get_variable("DEFAULT_COUNTRY"),
                     shape = NA, tiles = NULL,
-                    groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH"), dates = "2023-01-01",
+                    groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH"), dates = "2023-01-01",
                     inc_features = NA, exc_features = NA, filter_features = NULL,
                     filter_conditions = NULL, sample_size = 0.3, validation_sample = 0,
                     add_date = TRUE, verbose = TRUE, shrink = "none", window = NA,
@@ -170,13 +170,13 @@ check_pre_conditions <- function(dates, country, shape, tiles, shrink,
                                  inc_features, exc_features, verbose, datafolder) {
   ff_cat("Checking ff_prep function input", verbose = verbose)
   if (!has_value(datafolder)) {
-    stop("no environment variable for DATA_FOLDER found and no other option given")
+    stop("no environment variable for FF_FOLDER found and no other option given")
   }
   # Check date validity
   if (!has_value(dates) || any(is.na(dates)) || any(dates == "")) {
     stop("No dates were given")
   }
-  earliest_date <- Sys.getenv("EARLIEST_DATA_DATE")
+  earliest_date <- get_variable("EARLIEST_DATA_DATE")
   if (!has_value(earliest_date)) {
     ff_cat("no environment variable for EARLIEST_DATA_DATE, reverting to 2021-01-01",
       color = "yellow", verbose = verbose, log_level = "WARNING"
@@ -203,7 +203,13 @@ check_pre_conditions <- function(dates, country, shape, tiles, shrink,
 }
 
 get_tiles_and_shape <- function(country, shape, tiles_vector, tiles, verbose) {
-  if (has_value(country)) {
+  if (has_value(shape)) {
+    if (!terra::is.lonlat(shape)) {
+      shape <- terra::project(shape, "epsg:4326")
+    }
+    tiles <- tiles_vector[shape]$tile_id
+    ff_cat("Selecting based on shape\nProcessing tiles:", paste(tiles, collapse = ", "), verbose = verbose)
+  } else if (has_value(country)) {
     ff_cat("Selecting based on country", verbose = verbose)
     countries <- terra::vect(get(data("countries", envir = environment())))
     shape <- countries[which(countries$iso3 %in% country)]
@@ -212,14 +218,6 @@ get_tiles_and_shape <- function(country, shape, tiles_vector, tiles, verbose) {
       tiles <- tiles_vector
     }
     ff_cat("Processing tiles:", paste(tiles, collapse = ", "), verbose = verbose)
-  } else if (has_value(shape)) {
-    if (!terra::is.lonlat(shape)) {
-      shape <- terra::project(shape, "epsg:4326")
-    }
-
-    tiles <- tiles_vector[shape]$tile_id
-
-    ff_cat("Selecting based on shape\nProcessing tiles:", paste(tiles, collapse = ", "), verbose = verbose)
   }
   return(list(shape = shape, tiles = tiles))
 }

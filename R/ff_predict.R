@@ -42,7 +42,7 @@
 #' @import xgboost terra
 #' @export
 
-ff_predict <- function(model, test_matrix, thresholds = as.numeric(Sys.getenv("DEFAULT_THRESHOLD")),
+ff_predict <- function(model, test_matrix, thresholds = get_variable("DEFAULT_THRESHOLD"),
                        groundtruth = NA, indices = NA,
                        templateraster = NA, verbose = FALSE, certainty = FALSE) {
   # Load and validate model

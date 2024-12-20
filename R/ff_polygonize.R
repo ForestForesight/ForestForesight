@@ -1,7 +1,10 @@
 #' Polygonize raster to risk areas
 #'
-#' This function processes a raster file, applies thresholds, creates polygons,
-#' and simplifies them based on various parameters.
+#' @description
+#' Converts a raster file into polygons representing different risk levels for forest disturbance.
+#' The function processes the input raster by applying thresholds, smoothing, and creating simplified
+#' polygons based on various parameters. The number of output polygons can be automatically scaled
+#' based on the area size or manually specified.
 #'
 #' @param input_raster Character or SpatRaster. Path to the input raster file or a SpatRaster object
 #' @param output_file Character. File path to save shapefiles.
@@ -16,28 +19,74 @@
 #' @param window_size Numeric. Window size for focal calculation. Default is 7
 #' @param smoothness Numeric. Smoothness parameter for ksmooth method. Default is 2
 #' @param verbose Logical. Whether to print progress messages. Default is FALSE
-#' @param calculate_max_count Logical. If TRUE, outputs a reasonable number of polygons
-#'   based on area size. Default is FALSE
-#' @param contain_polygons SpatVector. If provided with calculate_max_count=TRUE,
-#'   only creates polygons within this boundary
+#' @param calculate_max_count Logical. If TRUE, automatically scales the number of output polygons
+#'   based on area size. Uses a power-law scaling that produces approximately:
+#'   * 2000 polygons for Brazil-sized areas (~850M ha)
+#'   * 1200 polygons for Indonesia-sized areas (~180M ha)
+#'   * 500 polygons for Colombia-sized areas (~110M ha)
+#'   * 150 polygons for Cambodia-sized areas (~18M ha)
+#'   * 50-100 polygons for small areas (<5M ha)
+#' @param max_polygons Numeric. Optional manual override for maximum number of polygons.
+#'   Cannot be used together with calculate_max_count=TRUE.
+#' @param contain_polygons SpatVector. Optional polygon boundary to restrict output.
+#'   When provided, only creates polygons within this boundary.
 #'
-#' @return A SpatVector object containing the processed and simplified polygons,
-#'   or NULL if no polygons were generated
+#' @return A list containing:
+#'   * polygons: A SpatVector object containing the processed and simplified polygons,
+#'     with attributes for risk level and area statistics. NULL if no polygons were generated.
+#'   * max_count: The maximum polygon count used for filtering (only when calculate_max_count=TRUE
+#'     or max_polygons is specified)
 #'
-#' @import terra
-#' @import smoothr
+#' @details
+#' The function implements a multi-step process:
+#' 1. Validates inputs and loads the raster
+#' 2. Processes the raster using the specified threshold and window size
+#' 3. Generates polygons with smoothing
+#' 4. Applies maximum count filtering if requested
+#' 5. Adds attributes including risk levels and area statistics
+#'
+#' The number of output polygons can be controlled in two ways:
+#' * Automatic scaling using calculate_max_count=TRUE
+#' * Manual specification using max_polygons parameter
+#'
+#' These options are mutually exclusive and will raise an error if both are provided.
+#'
+#' @section Warning:
+#' When using character-based thresholds ("medium", "high", "very high"), the actual
+#' numeric threshold is automatically determined based on the raster values distribution.
 #'
 #' @examples
 #' \dontrun{
 #' # Basic usage with default parameters
 #' result <- ff_polygonize("input.tif")
 #'
-#' # Save output with custom threshold
-#' ff_polygonize("input.tif",
-#'   output_file = "risk_areas.shp",
-#'   threshold = "high"
+#' # Save high-risk areas with automatic polygon count scaling
+#' result <- ff_polygonize("input.tif",
+#'   output_file = "high_risk.shp",
+#'   threshold = "high",
+#'   calculate_max_count = TRUE
+#' )
+#'
+#' # Specify exact number of polygons
+#' result <- ff_polygonize("input.tif",
+#'   threshold = 0.7,
+#'   max_polygons = 500
+#' )
+#'
+#' # Use with boundary constraint
+#' boundary <- vect("country_boundary.shp")
+#' result <- ff_polygonize("input.tif",
+#'   calculate_max_count = TRUE,
+#'   contain_polygons = boundary
 #' )
 #' }
+#'
+#' @seealso
+#' [smoothr::ksmooth()] for details on the smoothing algorithm
+#' [terra::focal()] for details on focal operations
+#'
+#' @import terra
+#' @import smoothr
 #'
 #' @export
 ff_polygonize <- function(input_raster,
@@ -48,37 +97,44 @@ ff_polygonize <- function(input_raster,
                           smoothness = 2,
                           verbose = FALSE,
                           calculate_max_count = FALSE,
+                          max_polygons = NULL,
                           contain_polygons = NA) {
   # Validate inputs and load raster
+  if (calculate_max_count && has_value(max_polygons)) {
+    stop("Either let the algorithm calculate the maximum amount of polygons or give it yourself")
+  }
   input_raster <- load_and_validate_raster(input_raster)
   validate_threshold(threshold)
 
   # Process raster and determine threshold
-  processed <- process_raster(input_raster, threshold, window_size, verbose)
-  if (is.null(processed)) {
+  processed_raster <- process_raster(input_raster, threshold, window_size, verbose)
+  if (is.null(processed_raster)) {
     return(NULL)
   }
 
   # Generate polygons
   generation_result <- generate_polygons(
-    processed$smoothed_raster,
+    processed_raster$smoothed_raster,
     minimum_pixel_count,
     input_raster,
     smoothness
   )
   polygons <- generation_result$focus_polygons
   minimum_pixel_area <- generation_result$minimum_pixel_area
+
   # Apply maximum count filtering if requested
-  if (calculate_max_count) {
-    polygons <- apply_max_count_filter(
-      polygons,
-      input_raster,
-      contain_polygons,
-      threshold,
-      minimum_pixel_area,
-      verbose
-    )
-  }
+
+  polygons_and_count <- apply_max_count_filter(
+    polygons,
+    input_raster,
+    contain_polygons,
+    threshold,
+    minimum_pixel_area,
+    calculate_max_count,
+    max_polygons,
+    verbose
+  )
+  polygons <- polygons_and_count$polygons
 
   # Check if any polygons were generated
   if (length(polygons) == 0) {
@@ -90,20 +146,20 @@ ff_polygonize <- function(input_raster,
   }
 
   # Add attributes and write output
-  result <- add_polygon_attributes(
+  polygons <- add_polygon_attributes(
     polygons,
     input_raster,
-    processed$final_threshold
+    processed_raster$final_threshold
   )
 
   if (!is.na(output_file)) {
-    ff_cat("writing", length(result), "polygons to", output_file,
+    ff_cat("writing", length(polygons), "polygons to", output_file,
       verbose = verbose
     )
-    terra::writeVector(x = result, filename = output_file, overwrite = TRUE)
+    terra::writeVector(x = polygons, filename = output_file, overwrite = TRUE)
   }
 
-  return(result)
+  return(list(polygons = polygons, max_count = polygons_and_count$max_count))
 }
 
 #' Load and validate input raster
@@ -173,7 +229,7 @@ process_raster <- function(input_raster, threshold, window_size, verbose) {
 #' Calculate raster statistics
 #' @noRd
 calculate_raster_stats <- function(input_raster) {
-  default_treshold <- as.numeric(Sys.getenv("DEFAULT_THRESHOLD"))
+  default_treshold <- get_variable("DEFAULT_THRESHOLD")
   list(
     raster_average = as.numeric(terra::global(input_raster < default_treshold,
       fun = "mean",
@@ -230,7 +286,12 @@ generate_polygons <- function(smoothed_raster,
                               minimum_pixel_count,
                               input_raster,
                               smoothness) {
-  minimum_pixel_area <- minimum_pixel_count * (terra::res(input_raster)[1] * 110000)^2
+  conversion_factor <- if (terra::is.lonlat(input_raster)) {
+    110000
+  } else {
+    1
+  }
+  minimum_pixel_area <- minimum_pixel_count * (terra::res(input_raster)[1] * conversion_factor)^2
 
   clumped_raster <- terra::patches(smoothed_raster,
     directions = 8,
@@ -260,40 +321,85 @@ generate_polygons <- function(smoothed_raster,
   return(list(focus_polygons = focus_polygons, minimum_pixel_area = minimum_pixel_area))
 }
 
-#' Apply maximum count filter to polygons
+#' Apply maximum count filter to polygons with country-based scaling
+#'
+#' @param polygons SpatVector of polygons to filter
+#' @param input_raster SpatRaster used for area calculation
+#' @param contain_polygons Optional SpatVector to intersect with polygons
+#' @param threshold Character string indicating risk level
+#' @param minimum_pixel_area Numeric minimum area for polygons
+#' @param verbose Logical for logging output
+#'
+#' @return Filtered SpatVector with scaled number of polygons
 #' @noRd
 apply_max_count_filter <- function(polygons,
                                    input_raster,
                                    contain_polygons,
                                    threshold,
                                    minimum_pixel_area,
+                                   calculate_max_count,
+                                   max_polygons,
                                    verbose) {
-  if (!is.na(contain_polygons)) {
+  # Apply containment filter if provided
+  if (has_value(contain_polygons)) {
     polygons <- polygons[contain_polygons, ]
   }
 
-  percentage_covered <- as.numeric(terra::global(
-    !is.na(input_raster),
-    "mean"
-  ))
-  raster_area <- as.numeric(terra::expanse(input_raster)[2])
-  max_polygons_count <- ceiling(sqrt(raster_area / 1e3) * percentage_covered)
+  # First filter by minimum area - do this regardless of count method
 
-  ff_cat(
-    "based on area of raster (hectares:",
-    round(raster_area / 1e5),
-    ", actual coverage:",
-    round(percentage_covered * 100),
-    "percent), at maximum",
-    max_polygons_count,
-    " polygons are generated",
-    verbose = verbose
-  )
+  valid_polygons <- terra::expanse(polygons) >= minimum_pixel_area
 
-  return(polygons[1:max(1, min(
-    max_polygons_count,
-    sum(terra::expanse(polygons) >= minimum_pixel_area)
-  ))])
+  polygons <- polygons[valid_polygons]
+
+  # If no valid polygons remain after area filtering, return early
+  if (length(polygons) == 0) {
+    return(list(polygons = polygons, max_count = 0))
+  }
+
+  # Calculate max_count based on method
+  if (calculate_max_count) {
+    # Calculate raster coverage and area
+    percentage_covered <- as.numeric(terra::global(!is.na(input_raster), "mean"))
+    raster_area <- as.numeric(terra::expanse(input_raster)[2])
+    area_ha <- raster_area / 1e4 # Convert to hectares
+
+    # Calculate base polygon count using power function
+    base_count <- 20 + (1980 * (area_ha / 8.5e8)^0.4)
+    max_count <- ceiling(base_count)
+
+    # Apply coverage percentage scaling
+    max_count <- ceiling(max_count * percentage_covered)
+
+    if (verbose) {
+      ff_cat(
+        "based on area of raster (hectares:",
+        round(area_ha),
+        ", actual coverage:",
+        round(percentage_covered * 100),
+        "percent), at maximum",
+        max_count,
+        " polygons are generated"
+      )
+    }
+  } else {
+    if (has_value(max_polygons)) {
+      max_count <- max_polygons
+    } else {
+      max_count <- length(polygons)
+    }
+  }
+
+  # Ensure we don't try to return more polygons than we have
+  max_count <- min(max_count, length(polygons))
+
+  # Order polygons by area before taking the final subset
+  areas <- terra::expanse(polygons)
+  polygons <- polygons[order(areas, decreasing = TRUE)]
+
+  # Take the top max_count polygons
+  final_polygons <- polygons[1:max_count]
+
+  return(list(polygons = final_polygons, max_count = max_count))
 }
 
 #' Add attributes to polygons
@@ -303,7 +409,12 @@ add_polygon_attributes <- function(polygons, input_raster, threshold) {
     input_raster, polygons,
     fun = "mean", ID = FALSE
   ), 2)
-  polygons$size <- round(terra::expanse(polygons) / 10000)
+  conversion_factor <- if (terra::is.lonlat(polygons)) {
+    110000
+  } else {
+    1
+  }
+  polygons$size <- round(terra::expanse(polygons) / 10000) * conversion_factor^2
   polygons$riskfactor <- round(polygons$size * polygons$risk)
   polygons$threshold <- threshold
   polygons$date <- as.character(as.Date(Sys.time()))

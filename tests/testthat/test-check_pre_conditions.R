@@ -1,8 +1,8 @@
 # Mock input data
 
-dates <- Sys.getenv("TEST_FF_PREP_QC_DATE")
+dates <- Sys.getenv("TEST_EARLIEST_DATA_DATE")
 country <- Sys.getenv("TEST_COUNTRY")
-datafolder <- Sys.getenv("TEST_DATA_FOLDER")
+datafolder <- Sys.getenv("TEST_FF_FOLDER")
 shape <- NULL
 tiles <- NULL
 shrink <- "none"

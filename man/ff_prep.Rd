@@ -5,11 +5,11 @@
 \title{Prepare data for XGBoost training, validating and predicting}
 \usage{
 ff_prep(
-  datafolder = Sys.getenv("FF_FOLDER"),
-  country = Sys.getenv("DEFAULT_COUNTRY"),
+  datafolder = get_variable("FF_FOLDER"),
+  country = get_variable("DEFAULT_COUNTRY"),
   shape = NA,
   tiles = NULL,
-  groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH"),
+  groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH"),
   dates = "2023-01-01",
   inc_features = NA,
   exc_features = NA,

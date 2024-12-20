@@ -36,15 +36,15 @@ ff_cat <- function(...,
                    verbose = TRUE,
                    log_level = "INFO",
                    log_file = NULL,
-                   timestamp = as.logical(Sys.getenv("TIMESTAMP")),
+                   timestamp = get_variable("TIMESTAMP"),
                    auto_newline = TRUE) {
   if (!has_value(timestamp)) {
     timestamp <- TRUE
   }
-  logging_enabled <- as.logical(Sys.getenv("LOGGING"))
+  logging_enabled <- get_variable("LOGGING")
   if (logging_enabled) {
     if (!has_value(log_file)) {
-      log_directory <- Sys.getenv("LOGFILE_FOLDER")
+      log_directory <- get_variable("LOGFILE_FOLDER")
       if (has_value(log_directory)) {
         if (!dir.exists(log_directory)) {
           dir.create(log_directory, recursive = TRUE)

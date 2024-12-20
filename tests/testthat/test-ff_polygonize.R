@@ -4,9 +4,9 @@ test_that("ff_polygonize handles basic functionality", {
 
   # Test 1: Basic functionality with default parameters
   result <- ff_polygonize(test_raster)
-  expect_true(inherits(result, "SpatVector"))
-  expect_true(all(c("risk", "size", "riskfactor", "threshold", "date") %in% names(result)))
-  expect_true(all(result$risk >= 0 & result$risk <= 1))
+  expect_true(inherits(result$polygons, "SpatVector"))
+  expect_true(all(c("risk", "size", "riskfactor", "threshold", "date") %in% names(result$polygons)))
+  expect_true(all(result$polygons$risk >= 0 & result$risk <= 1))
 
   # Test 2: Test with custom threshold
   high_thresh_result <- ff_polygonize(
@@ -14,8 +14,8 @@ test_that("ff_polygonize handles basic functionality", {
     threshold = 0.8,
     minimum_pixel_count = 3
   )
-  expect_true(all(high_thresh_result$threshold == 0.8))
-  expect_true(length(high_thresh_result) <= length(result)) # Should have fewer polygons
+  expect_true(all(high_thresh_result$polygons$threshold == 0.8))
+  expect_true(length(high_thresh_result$polygons) <= length(result$polygons)) # Should have fewer polygons
 
   # Test 3: Test automatic thresholding
   auto_thresh_result <- ff_polygonize(
@@ -23,8 +23,8 @@ test_that("ff_polygonize handles basic functionality", {
     threshold = "medium",
     verbose = TRUE
   )
-  expect_true(inherits(auto_thresh_result, "SpatVector"))
-  expect_true(!is.na(auto_thresh_result$threshold[1]))
+  expect_true(inherits(auto_thresh_result$polygons, "SpatVector"))
+  expect_true(!is.na(auto_thresh_result$polygons$threshold[1]))
 
   # Test 4: Test output file writing
   temp_file <- tempfile(fileext = ".shp")
@@ -41,8 +41,8 @@ test_that("ff_polygonize handles basic functionality", {
     test_raster,
     calculate_max_count = TRUE
   )
-  expect_true(inherits(max_count_result, "SpatVector"))
-  expect_true(length(max_count_result) > 0)
+  expect_true(inherits(max_count_result$polygons, "SpatVector"))
+  expect_true(length(max_count_result$polygons) > 0)
 
   # Test 6: Test error handling for invalid inputs
   expect_error(

@@ -21,12 +21,12 @@
 #'
 #' @export
 ff_structurecheck <- function(shape = NULL,
-                              country = Sys.getenv("DEFAULT_COUNTRY"),
-                              folder_path = Sys.getenv("FF_FOLDER"),
+                              country = get_variable("DEFAULT_COUNTRY"),
+                              folder_path = get_variable("FF_FOLDER"),
                               check_date = NULL,
                               error_on_issue = FALSE,
                               silent_on_pass = FALSE,
-                              groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH")) {
+                              groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH")) {
   # Get info from shape
   if (!has_value(shape)) {
     if (!has_value(country)) {
@@ -63,7 +63,7 @@ check_main_folders <- function(folder_path, error_on_issue, silent_on_pass) {
   for (folder in main_folders) {
     if (!dir.exists(file.path(folder_path, folder))) {
       if (error_on_issue && folder %in% main_folders[2:3]) {
-        dir.create(file.path(folder_path, folder))
+        dir.create(file.path(folder_path, folder), showWarnings = FALSE)
 
         print_result("No", folder, "folder present, automatically created",
           color = "yellow"
@@ -233,7 +233,7 @@ check_model_group <- function(folder_path, group, error_on_issue, silent_on_pass
   group_folder <- file.path(folder_path, "models", group)
   if (!dir.exists(group_folder)) {
     if (error_on_issue) {
-      dir.create(group_folder, recursive = TRUE)
+      dir.create(group_folder, recursive = TRUE, showWarnings = FALSE)
       print_result("No subfolder for group", group, "in models, automatically created",
         color = "yellow",
         error_on_issue = error_on_issue
@@ -303,7 +303,7 @@ check_country_predictions <- function(folder_path, cname, error_on_issue, silent
 
   if (!dir.exists(iso3_folder)) {
     if (error_on_issue) {
-      dir.create(iso3_folder, recursive = TRUE)
+      dir.create(iso3_folder, recursive = TRUE, showWarnings = FALSE)
       print_result(paste("No subfolder for ISO3 code", iso3, "in predictions, automatically created"),
         color = "yellow",
         error_on_issue = error_on_issue

@@ -7,6 +7,8 @@
 #' @param predictions A SpatRaster object or path to raster file representing the predictions
 #' @param groundtruth A SpatRaster object or path to raster file representing the ground truth
 #' @param forest_mask Optional SpatRaster object or path to raster file representing the forest mask
+#' @param forest_mask_condition Character. Condition to apply to forest mask. default is the environment variable
+#' FOREST_MASK_FILTER, normally '>0'
 #' @param csv_filename Optional path to CSV file for writing results
 #' @param country Character string containing ISO3 code for filtering analysis polygons
 #' @param append Logical indicating whether to append results to existing CSV file
@@ -24,7 +26,8 @@
 #' @return A SpatVector object containing calculated scores for each polygon
 #'
 #' @export
-ff_analyze <- function(predictions, groundtruth, forest_mask = NULL, csv_filename = NULL,
+ff_analyze <- function(predictions, groundtruth, forest_mask = get_variable("FOREST_MASK"),
+                       forest_mask_condition = get_variable("FOREST_MASK_FILTER"), csv_filename = NULL,
                        country = NULL, append = TRUE, analysis_polygons = NULL,
                        remove_empty = TRUE, date = NULL, tile = NULL, method = NA,
                        add_wkt = FALSE, calculate_best_threshold = FALSE, verbose = FALSE) {
@@ -32,7 +35,7 @@ ff_analyze <- function(predictions, groundtruth, forest_mask = NULL, csv_filenam
   if (is.null(date)) {
     date <- get_date_from_files(predictions, groundtruth)
   }
-
+  forest_mask <- resolve_forest_mask(groundtruth, forest_mask)
   # Validate and load input data
   loaded_rasters <- validate_and_load_data(predictions, groundtruth, forest_mask, verbose = verbose)
   predictions <- loaded_rasters$predictions
@@ -41,6 +44,7 @@ ff_analyze <- function(predictions, groundtruth, forest_mask = NULL, csv_filenam
   predictions_and_threshold <- reclassify_predictions(
     predictions = predictions, groundtruth = groundtruth,
     forest_mask = forest_mask, calculate_best_threshold = calculate_best_threshold,
+    filter_condition = forest_mask_condition,
     verbose = verbose
   )
   predictions <- predictions_and_threshold$predictions
@@ -143,9 +147,9 @@ calculate_scores_crosstable <- function(crosstable_raster, polygons, verbose) {
       (sum(polygons$TP, na.rm = TRUE) + sum(polygons$FP, na.rm = TRUE))
     recall <- sum(polygons$TP, na.rm = TRUE) /
       (sum(polygons$TP, na.rm = TRUE) + sum(polygons$FN, na.rm = TRUE))
-    ff_cat("F0.5 score is:", 1.25 * precision * recall / (0.25 * precision + recall),
-      verbose = verbose
-    )
+    ff_cat("F0.5 score:", round(1.25 * precision * recall / (0.25 * precision + recall), 2), verbose = verbose)
+    ff_cat("precision:", round(precision, 2), verbose = verbose)
+    ff_cat("recall:", round(recall, 2), verbose = verbose)
   }
   return(polygons)
 }
@@ -267,7 +271,18 @@ process_and_write_output <- function(polygons, csv_filename = NULL, append = TRU
       ff_cat("appending to existing dataset", verbose = verbose)
       previous_data <- read.csv(csv_filename)
       previous_data$X <- NULL
-      write.csv(rbind(previous_data, polygons_dataframe), csv_filename)
+      # Get all unique column names
+      all_columns <- unique(c(names(previous_data), names(polygons_dataframe)))
+
+      # Add missing columns to each dataframe with NA
+      previous_data[setdiff(all_columns, names(previous_data))] <- NA
+      polygons_dataframe[setdiff(all_columns, names(polygons_dataframe))] <- NA
+
+      # Now rbind will work without errors
+      polygons_dataframe <- rbind(previous_data, polygons_dataframe)
+      polygons_dataframe <- # Get all unique column names
+
+        write.csv(polygons_dataframe, csv_filename)
     } else {
       if (!file.exists(csv_filename) && append && verbose) {
         ff_cat("the given file does not exist, while append was set to TRUE",
@@ -291,6 +306,8 @@ process_and_write_output <- function(polygons, csv_filename = NULL, append = TRU
 #' @param groundtruth SpatRaster. Reference raster containing true values for threshold optimization.
 #' @param forest_mask SpatRaster. Optional mask defining forest areas for focused threshold calculation.
 #' @param calculate_best_threshold logical. Whether to calculate optimal threshold (TRUE) or use default (FALSE).
+#' @param filter_condition filter condition to apply to the forest mask, like >0, which is the default.
+#' @param verbose logical. Whether to output any verbose statements.
 #'
 #' @details
 #' The function handles three main cases:
@@ -301,8 +318,8 @@ process_and_write_output <- function(polygons, csv_filename = NULL, append = TRU
 #' @return SpatRaster. Binary classified raster with values 0 and 1.
 #'
 #' @noRd
-reclassify_predictions <- function(predictions, groundtruth, forest_mask, calculate_best_threshold, verbose) {
-  threshold <- as.numeric(Sys.getenv("DEFAULT_THRESHOLD"))
+reclassify_predictions <- function(predictions, groundtruth, forest_mask, calculate_best_threshold, filter_condition, verbose) {
+  threshold <- get_variable("DEFAULT_THRESHOLD")
   # Check and reclassify predictions if needed. multiply by 100 because freq automatically turns to integer
   classified <- nrow(terra::freq(predictions, digits = 2)) < 3
   if (!classified && !calculate_best_threshold) {
@@ -319,8 +336,8 @@ reclassify_predictions <- function(predictions, groundtruth, forest_mask, calcul
     ff_cat("calculalating optimal threshold", verbose = verbose)
     if (has_value(forest_mask)) {
       optimal_values <- find_best_threshold(
-        prediction = predictions * (forest_mask > 0),
-        groundtruth = groundtruth * (forest_mask > 0)
+        prediction = predictions * filter_raster_by_condition(forest_mask, filter_condition),
+        groundtruth = groundtruth * filter_raster_by_condition(forest_mask, filter_condition)
       )
       threshold <- optimal_values$best_threshold
       ff_cat("automatically found optimal threshold:", round(threshold, 2))
@@ -328,4 +345,125 @@ reclassify_predictions <- function(predictions, groundtruth, forest_mask, calcul
     }
   }
   return(list(predictions = predictions, threshold = threshold))
+}
+
+
+#' Resolve forest mask file path
+#'
+#' @description
+#' Resolves the forest mask file path based on the predictions file location.
+#' If forest_mask matches the default from environment variables, searches for
+#' a matching mask file in the predictions directory.
+#'
+#' @param predictions Character string. Path to the predictions .tif file.
+#' @param forest_mask Character string. Current forest mask value to potentially resolve.
+#'
+#' @return Character string. Resolved forest mask file path.
+#'
+#' @details
+#' If forest_mask equals the FOREST_MASK environment variable value and predictions
+#' is a valid .tif file path, searches the predictions directory for a .tif file
+#' containing the forest mask pattern. Errors if no matching file or multiple
+#' matching files are found.
+#'
+#' @examples
+#' \dontrun{
+#' # With environment variable FOREST_MASK="initialforestcover"
+#' forest_mask <- resolve_forest_mask(
+#'   predictions = "path/to/predictions.tif",
+#'   forest_mask = "initialforestcover"
+#' )
+#' }
+#'
+#' @noRd
+resolve_forest_mask <- function(groundtruth, forest_mask) {
+  # Early return if forest_mask doesn't match environment variable
+  if (!inherits(forest_mask, "character") || forest_mask != get_variable("FOREST_MASK")) {
+    return(forest_mask)
+  }
+
+  # Validate predictions input
+  if (!is.character(groundtruth)) {
+    stop("Predictions must be a character string containing a file path,
+         otherwise give path to forestmask or let forestmask be a SpatRaster")
+  }
+
+  if (!file.exists(groundtruth)) {
+    stop(sprintf("Predictions file does not exist: %s", groundtruth))
+  }
+
+  if (!grepl("\\.tif$", groundtruth)) {
+    stop("Predictions must be a .tif file")
+  }
+
+  # Get the directory containing the predictions file
+  groundtruth_dir <- gsub("groundtruth", "input", dirname(groundtruth))
+
+  # Get all .tif files in the directory
+  tif_files <- list.files(
+    path = groundtruth_dir,
+    pattern = "\\.tif$",
+    full.names = TRUE
+  )
+
+  # Search for files containing the forest_mask pattern
+  mask_pattern <- get_variable("FOREST_MASK")
+  mask_files <- tif_files[grepl(mask_pattern, basename(tif_files), fixed = TRUE)]
+
+  if (length(mask_files) == 0) {
+    stop(sprintf(
+      "No forest mask file containing pattern '%s' found in directory: %s",
+      mask_pattern,
+      gsub("groundtruth", "input", groundtruth_dir)
+    ))
+  } else if (length(mask_files) > 1) {
+    stop(sprintf(
+      "Multiple forest mask files found matching pattern '%s' in directory: %s\nFiles: %s",
+      mask_pattern,
+      gsub("groundtruth", "input", groundtruth_dir),
+      paste(basename(mask_files), collapse = ", ")
+    ))
+  }
+
+  # Return the single matching file path
+  return(mask_files[1])
+}
+
+#' Filter SpatRaster by condition
+#'
+#' This function filters a single-layer SpatRaster based on a specified condition.
+#'
+#' @param input_raster The input SpatRaster to filter (single layer).
+#' @param filter_condition A character vector specifying the conditions for each feature.
+#' @param verbose Logical indicating whether to display verbose output (default is TRUE).
+#'
+#' @return A filtered SpatRaster where cells not meeting the condition are set to NA.
+#'
+#' @examples
+#' \dontrun{
+#' filtered_rast <- filter_raster_by_condition(
+#'   filter_conditions = ">0",
+#'   input_raster = my_raster
+#' )
+#' }
+#'
+#' @noRd
+filter_raster_by_condition <- function(input_raster, filter_condition, verbose = TRUE) {
+  operator <- gsub("[[:alnum:]\\.-]", "", filter_condition)
+  value <- as.numeric(gsub("[^0-9\\.-]", "", filter_condition))
+
+  ff_cat("filtering on condition", filter_condition, verbose = verbose)
+
+  input_raster <- switch(operator,
+    ">" = input_raster > value,
+    "<" = input_raster < value,
+    "==" = input_raster == value,
+    "!=" = input_raster != value,
+    ">=" = input_raster >= value,
+    "<=" = input_raster <= value,
+    input_raster
+  )
+
+
+  return(input_raster)
 }

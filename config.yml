@@ -1,17 +1,14 @@
-URL_MARKDOWN: https://raw.githubusercontent.com/jduijvenbode-WWF/ForestForesight/main/README.md
-AWS_BUCKET_NAME: forestforesight-public
-AWS_BUCKET_REGION: eu-west-1
 EARLIEST_DATA_DATE: '2021-01-01'
-FF_FOLDER:
+FF_FOLDER: '~'
 DEFAULT_THRESHOLD: 0.5
 DEFAULT_COUNTRY:
 DEFAULT_GROUNDTRUTH: groundtruth6m
 FOREST_MASK: initialforestcover
 FOREST_MASK_FILTER: '>0'
 LOGGING: 'TRUE'
-LOGFILE_FOLDER:
+LOGFILE_FOLDER: '~'
 TIMESTAMP: 'TRUE'
 TEST:
-  DATA_FOLDER: ../test_data
-  FF_PREP_QC_DATE: '2021-01-01'
+  FF_FOLDER: '../test_data'
+  EARLIEST_DATA_DATE: '2021-01-01'
   COUNTRY: BRN
