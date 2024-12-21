@@ -53,12 +53,13 @@ test_that("ff_accuracyreport handles different input types correctly", {
   )
 
   # Test 5: Error when both inputs are NULL
-  testthat::expect_error(
-    ff_accuracyreport(
-      accuracy_data = NULL,
-      importance_data = NULL
-    ),
-    "Either accuracy_data or importance_data must be provided"
+  result=ff_accuracyreport(
+    accuracy_data = NULL,
+    importance_data = NULL
+  )
+  testthat::expect_equal(
+    result,
+    NULL
   )
 
   # Test 6: Path output

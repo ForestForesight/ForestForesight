@@ -40,6 +40,12 @@ ff_accuracyreport <- function(accuracy_data = NULL,
                               output_path = NULL,
                               title = "Accuracy Analysis: Forest Foresight",
                               new_window = FALSE) {
+  # Stop if no data is provided
+  if (is.null(accuracy_data) && is.null(importance_data)) {
+    ff_cat("No accuracy report created.
+           Either accuracy_data or importance_data must be provided", color = "yellow", verbose = TRUE)
+    return(invisible(NULL))
+  }
   if (is.null(output_path) && !interactive()) {
     invisible(NULL)
   }
@@ -47,12 +53,7 @@ ff_accuracyreport <- function(accuracy_data = NULL,
   results <- load_accuracy_data(accuracy_data)
   importance_results <- load_importance_data(importance_data)
 
-  # Stop if no data is provided
-  if (is.null(results) && is.null(importance_results)) {
-    ff_cat("No accuracy report created.
-           Either accuracy_data or importance_data must be provided")
-    invisible(NULL)
-  }
+
 
   # Only process accuracy data if it exists
   if (!is.null(results)) {
