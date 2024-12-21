@@ -49,24 +49,6 @@ test_that("ff_run handles various input combinations and edge cases", {
     )
   )
 
-  # Test with both shape and country (should error)
-  testthat::expect_error(
-    ff_run(
-      shape = test_country,
-      country = "BRN",
-      train_dates = "2023-01-01",
-      ff_folder = datadir
-    )
-  )
-
-  # Test with neither shape nor country (should error)
-  testthat::expect_error(
-    ff_run(
-      train_dates = "2023-01-01",
-      ff_folder = datadir
-    )
-  )
-
   # Test invalid dates
   testthat::expect_error(
     ff_run(
@@ -199,13 +181,18 @@ test_that("ff_run handles various input combinations and edge cases", {
 
   # Test with accuracy output
   accuracy_file <- file.path(test_dir, "accuracy.csv")
+  polygons_file <- file.path(test_dir, "risk_zones.shp")
   testthat::expect_no_error(
-    ff_run(
+    result <- ff_run(
       country = "BRN",
       train_dates = "2023-01-01",
-      prediction_dates = "2023-03-01",
+      prediction_dates = c("2023-02-01", "2023-03-01"),
+      risk_zones_save_path = polygons_file,
       ff_folder = datadir,
       accuracy_output_path = accuracy_file
     )
   )
+  testthat::expect_true(length(list.files(path = test_dir, pattern = "risk_zones")) > 3)
+  testthat::expect_true(has_value(result$risk_zones))
+  testthat::expect_true(length(result$risk_zones) == 2)
 })

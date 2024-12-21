@@ -6,25 +6,27 @@
 \usage{
 ff_run(
   shape = NULL,
-  country = NULL,
+  country = get_variable("DEFAULT_COUNTRY"),
   prediction_dates = NULL,
-  ff_folder,
+  ff_folder = get_variable("FF_FOLDER"),
   train_dates = NULL,
   validation_dates = NULL,
   model_save_path = NULL,
   predictions_save_path = NULL,
+  risk_zones_save_path = NULL,
+  accuracy_report_path = NULL,
   pretrained_model_path = NULL,
   ff_prep_parameters = NULL,
   ff_train_parameters = NULL,
-  certainty_threshold = 0.5,
-  filter_features = "initialforestcover",
-  filter_conditions = ">0",
+  certainty_threshold = get_variable("DEFAULT_THRESHOLD"),
+  filter_features = get_variable("FOREST_MASK"),
+  filter_conditions = get_variable("FOREST_MASK_FILTER"),
   accuracy_output_path = NULL,
   importance_output_path = NULL,
   verbose = TRUE,
   autoscale_sample = FALSE,
   validation = FALSE,
-  groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH")
+  groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH")
 )
 }
 \arguments{
@@ -45,6 +47,9 @@ dates should be a vector with the format YYYY-MM-DD with DD being 01}
 \item{model_save_path}{Path to save the trained model (with extension ".model"). Default is NULL.}
 
 \item{predictions_save_path}{Path to save the predictions (with extension ".tif"). Default is NULL.}
+
+\item{risk_zones_save_path}{Path to save the predictions as risk zones (with extension ".shp").
+This implements the standard settings of ff_polygonize. Default is NULL.}
 
 \item{pretrained_model_path}{Pre-trained model object or path to saved model.
 If NULL, a new model will be trained. Default is NULL.}
@@ -77,6 +82,8 @@ which is set at 0.25 of the training matrix. Should not be set if validation_dat
 A list containing:
   \item{prediction_timeseries}{A SpatRaster object or RasterStack containing the predicted deforestation
         probabilities for each prediction date}
+  \item{risk_zones}{A nested list with per date three SpatVectors on
+  Medium, High and Very High Risk level risk zones}
   \item{shape}{The SpatVector object used for analysis, either from direct input or derived from country code}
   \item{model}{Path to the model used for predictions (either newly trained or pretrained)}
   \item{accuracy_dataframe}{A SpatialPolygonsDataFrame containing accuracy metrics for each analyzed area.

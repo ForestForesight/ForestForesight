@@ -42,7 +42,8 @@
 #' @import xgboost terra
 #' @export
 
-ff_predict <- function(model, test_matrix, thresholds = 0.5, groundtruth = NA, indices = NA,
+ff_predict <- function(model, test_matrix, thresholds = get_variable("DEFAULT_THRESHOLD"),
+                       groundtruth = NA, indices = NA,
                        templateraster = NA, verbose = FALSE, certainty = FALSE) {
   # Load and validate model
   loaded_model <- load_model(model)
@@ -109,7 +110,7 @@ remove_extra_features <- function(test_matrix, loaded_model) {
       ff_cat(
         "Removing extra features from the test matrix:",
         paste(extra_features, collapse = ", "),
-        color = "yellow"
+        color = "yellow", log_level = "WARNING"
       )
       test_matrix$features <- test_matrix$features[, setdiff(test_features, extra_features),
         drop = FALSE
@@ -132,7 +133,7 @@ remove_extra_features <- function(test_matrix, loaded_model) {
 #' @noRd
 calculate_metrics <- function(predictions, groundtruth, thresholds, verbose) {
   if (!has_value(groundtruth)) {
-    ff_cat("no groundtruth found, returning NA for precision, recall and F0.5")
+    ff_cat("no groundtruth found, returning NA for precision, recall and F0.5", verbose = verbose)
     return(list(precision = NA, recall = NA, accuracy_f05 = NA))
   }
   ff_cat("calculating scores", verbose = verbose)

@@ -17,13 +17,13 @@
 #' @param download_groundtruth Logical. Whether to download the groundtruth data as well.
 #' This should be turned off when you want to use your own data as groundtruth. Default is TRUE.
 #' @param groundtruth_pattern The pattern to search for.
-#' This is normally groundtruth6m for 6 months but can be set to groundtruth1m, groundtruth3m or groundtruth12m for one, three or twelve months respectively
+#' This is normally groundtruth6m for 6 months but can be set to groundtruth1m, groundtruth3m
+#' or groundtruth12m for one, three or twelve months respectively
 #' @param download_predictions Logical. Whether to download the prediction data.
 #' Only works when downloading for entire countries. Default is FALSE.
 #' @param bucket Character. Name of the S3 bucket. Default is "forestforesight-public".
 #' @param region Character. AWS region of the bucket. Default is "eu-west-1".
 #' @param verbose Logical. Whether the function should be verbose.
-#' @param sync_verbose Logical. Whether the syncing should also be verbose. Default
 #'
 #' @import aws.s3
 #' @import terra
@@ -38,45 +38,22 @@
 #' }
 #'
 #' @export
-ff_sync <- function(ff_folder, identifier, features = "Everything",
+ff_sync <- function(ff_folder = get_variable("FF_FOLDER"),
+                    identifier = get_variable("DEFAULT_COUNTRY"), features = "Everything",
                     date_start = NULL, date_end = NULL,
                     download_model = FALSE, download_data = TRUE,
                     download_predictions = FALSE, download_groundtruth = TRUE,
-                    groundtruth_pattern = "groundtruth6m",
-                    bucket = Sys.getenv("AWS_BUCKET_NAME"), region = Sys.getenv("AWS_BUCKET_REGION"),
-                    verbose = TRUE, sync_verbose = FALSE) {
+                    groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH"),
+                    bucket = "forestforesight-public", region = "eu-west-1",
+                    verbose = TRUE) {
   # Validate and process dates
-  current_month <- format(Sys.Date(), "%Y-%m-01")
+  sync_dates <- sync_initialize_and_check(ff_folder, date_start, date_end, features)
+  date_start <- sync_dates$date_start
+  date_end <- sync_dates$date_end
 
-  if (!dir.exists(ff_folder)) {
-    dir.create(ff_folder, recursive = TRUE)
-  }
-
-
-  if (!is.null(date_start)) {
-    if (!grepl("-01$", date_start)) {
-      stop("date_start must be the first day of a month")
-    }
-    if (date_start < Sys.getenv("EARLIEST_DATA_DATE")) {
-      stop(paste0("date start cannot be before ", Sys.getenv("EARLIEST_DATA_DATE")))
-    }
-  } else if (!is.null(date_end)) {
-    date_start <- Sys.getenv("EARLIEST_DATA_DATE")
-  }
-
-  if (!is.null(date_end)) {
-    if (!grepl("-01$", date_end)) {
-      stop("date_end must be the first day of a month")
-    }
-    if (date_end > current_month) {
-      stop("date_end cannot be after the first of the current month")
-    }
-  } else if (!is.null(date_start)) {
-    date_end <- current_month
-  }
 
   # Process features parameter
-  feature_list <- ff_sync_get_features(features = features, ff_folder = ff_folder)
+
 
   # Create ff_folder if it doesn't exist
 
@@ -92,20 +69,28 @@ ff_sync <- function(ff_folder, identifier, features = "Everything",
   }
   # Download model if requested
   if (download_model) {
-    model_downloader(ff_folder, country_codes, bucket, region, verbose, sync_verbose)
+    model_downloader(ff_folder, country_codes, bucket, region, verbose)
   }
+  feature_list <- ff_sync_get_features(features = features, ff_folder = ff_folder)
   # Sync input and ground truth data for each tile
   if (download_data || download_groundtruth) {
     ff_cat("Downloading input and ground truth data", verbose = verbose)
     for (tile in tiles) {
       # Handle input data
       if (download_data) {
-        data_downloader(ff_folder = ff_folder, tile = tile, feature_list = feature_list, dates_to_check = dates_to_check, bucket = bucket, region = region, verbose = verbose)
+        data_downloader(
+          ff_folder = ff_folder, tile = tile, feature_list = feature_list,
+          dates_to_check = dates_to_check, bucket = bucket, region = region, verbose = verbose
+        )
       }
 
       # Handle ground truth data (unchanged)
       if (download_groundtruth) {
-        groundtruth_downloader(ff_folder = ff_folder, tile = tile, dates_to_check = dates_to_check, bucket = bucket, region = region, verbose = verbose, groundtruth_pattern = groundtruth_pattern)
+        groundtruth_downloader(
+          ff_folder = ff_folder, tile = tile, dates_to_check =
+            dates_to_check, bucket = bucket, region = region, verbose = verbose,
+          groundtruth_pattern = groundtruth_pattern
+        )
       }
     }
   }
@@ -114,7 +99,11 @@ ff_sync <- function(ff_folder, identifier, features = "Everything",
 
   # Download predictions if requested
   if (download_predictions) {
-    prediction_downloader(ff_folder = ff_folder, country_codes = country_codes, dates_to_check = dates_to_check, bucket = bucket, region = region, verbose = verbose, sync_verbose = sync_verbose)
+    prediction_downloader(
+      ff_folder = ff_folder, country_codes = country_codes,
+      dates_to_check = dates_to_check, bucket = bucket, region = region,
+      verbose = verbose
+    )
   }
 
   invisible(NULL)
@@ -156,7 +145,11 @@ ff_sync_get_features <- function(features, ff_folder) {
       feature_metadata <- get("feature_metadata")
       if (!all(features %in% feature_metadata$name)) {
         missing_features <- features[!features %in% feature_metadata$name]
-        stop("The following features are not valid: ", paste(missing_features, collapse = ", "), "available features are:", paste(feature_metadata$name, collapse = "\n"))
+        stop(
+          "The following features are not valid: ",
+          paste(missing_features, collapse = ", "),
+          "available features are:", paste(feature_metadata$name, collapse = "\n")
+        )
       }
       feature_list <- features
     }
@@ -194,9 +187,10 @@ groundtruth_downloader <- function(ff_folder, tile, dates_to_check, bucket, regi
   # Sync matched files
   for (file in matching_files) {
     if (!file.exists(file.path(ff_folder, file))) {
+      ff_cat(file, verbose = verbose)
       aws.s3::save_object(file,
         bucket = bucket, region = region,
-        file = file.path(ff_folder, file), verbose = verbose
+        file = file.path(ff_folder, file), verbose = FALSE
       )
     }
   }
@@ -236,7 +230,7 @@ get_tiles_and_country_codes <- function(identifier) {
   return(list(tiles = tiles, country_codes = country_codes))
 }
 
-model_downloader <- function(ff_folder, country_codes, bucket, region, verbose, sync_verbose) {
+model_downloader <- function(ff_folder, country_codes, bucket, region, verbose) {
   countries <- terra::vect(get(data("countries")))
   groups <- countries$group[countries$iso3 == country_codes]
   for (group in groups) {
@@ -250,7 +244,7 @@ model_downloader <- function(ff_folder, country_codes, bucket, region, verbose, 
       ff_cat(file, verbose = verbose)
       aws.s3::save_object(file,
         bucket = bucket, region = region,
-        file = file.path(ff_folder, file), verbose = F
+        file = file.path(ff_folder, file), verbose = FALSE
       )
     }
   }
@@ -289,17 +283,16 @@ data_downloader <- function(ff_folder, tile, feature_list, dates_to_check, bucke
         ff_cat(file, verbose = verbose)
         aws.s3::save_object(file,
           bucket = bucket, region = region,
-          file = file.path(ff_folder, file), verbose = F
+          file = file.path(ff_folder, file), verbose = FALSE
         )
       }
     }
   }
 }
 
-prediction_downloader <- function(ff_folder, country_codes, dates_to_check, bucket, region, verbose, sync_verbose) {
+prediction_downloader <- function(ff_folder, country_codes, dates_to_check, bucket, region, verbose) {
   for (country_code in country_codes) {
     pred_folder <- file.path(ff_folder, "predictions", country_code)
-    ff_cat("Downloading predictions to", pred_folder, verbose = verbose)
     if (!dir.exists(pred_folder)) dir.create(pred_folder, recursive = TRUE)
     prefix <- file.path("predictions", country_code)
     s3_files <- aws.s3::get_bucket(bucket, prefix = prefix, region = region, max = Inf)
@@ -318,14 +311,105 @@ prediction_downloader <- function(ff_folder, country_codes, dates_to_check, buck
         s3_files <- select_files_date(given_date = min(dates_to_check), listed_files = s3_files)
       }
     }
+    if (has_value(s3_files)) {
+      ff_cat("Downloading predictions to", pred_folder,
+        verbose = verbose
+      )
+    } else {
+      ff_cat("no prediction files found for given dates",
+        color = "yellow", verbose = verbose
+      )
+    }
     for (file in s3_files) {
       if (!file.exists(file.path(ff_folder, file))) {
         ff_cat(file, verbose = verbose)
         aws.s3::save_object(file,
           bucket = bucket, region = region,
-          file = file.path(ff_folder, file), verbose = F
+          file = file.path(ff_folder, file), verbose = FALSE
         )
       }
     }
   }
+}
+
+#' Initialize and Validate ForestForesight Sync Parameters
+#'
+#' This function validates sync parameters and initializes the folder structure for
+#' ForestForesight data synchronization. It performs several validation checks on dates
+#' and feature settings, and creates the necessary directory structure if it doesn't exist.
+#'
+#' @param ff_folder Character; path to the ForestForesight data folder
+#' @param date_start Character; start date in "YYYY-MM-01" format. Must be after
+#'        the earliest available data date and be the first day of a month
+#' @param date_end Character; end date in "YYYY-MM-01" format. Must not be after
+#'        the current month and must be the first day of a month
+#' @param features Character; level of features to sync. Must be one of:
+#'        "Highest", "High", "Medium", "Low", "Everything", or "Small Model"
+#'
+#' @return A list containing validated and potentially adjusted parameters:
+#'   \item{date_start}{Character; validated or default start date}
+#'   \item{date_end}{Character; validated or default end date}
+#'
+#' @details
+#' The function performs these checks:
+#' * Validates feature option against allowed values
+#' * Creates ff_folder if it doesn't exist
+#' * Ensures dates are first day of month
+#' * Validates date ranges against available data
+#' * Sets default dates when not provided:
+#'   - If only end date given, start date defaults to earliest available
+#'   - If only start date given, end date defaults to current month
+#'
+#' @note
+#' The function assumes the existence of environment variable "EARLIEST_DATA_DATE"
+#' which defines the earliest available data date in the system.
+#'
+#' @noRd
+sync_initialize_and_check <- function(ff_folder, date_start, date_end, features) {
+  ff_features <- get(data("feature_metadata", envir = environment()))
+  # get feature names of only features that are in SpatRaster format
+  ff_features <- ff_features[ff_features$source != "autogenerated", ]$name
+  if (length(features) == 1) {
+    if (!((casefold(features) %in%
+      c(ff_features, c("highest", "high", "medium", "low", "everything", "small model"))))) {
+      stop("incorrect feature option given. please give a vector of feature names
+    or choose between:
+         Highest, High, Medium, Low, Everything, Small Model")
+    }
+  } else {
+    if (!all((casefold(features) %in%
+      ff_features))) {
+      stop("incorrect feature option given. please give a vector of feature names
+    or choose between:
+         Highest, High, Medium, Low, Everything, Small Model")
+    }
+  }
+  current_month <- format(Sys.Date(), "%Y-%m-01")
+  if (!dir.exists(ff_folder)) {
+    dir.create(ff_folder, recursive = TRUE)
+  }
+
+
+  if (!is.null(date_start)) {
+    if (!grepl("-01$", date_start)) {
+      stop("date_start must be the first day of a month")
+    }
+    if (date_start < Sys.getenv("EARLIEST_DATA_DATE")) {
+      stop(paste0("date start cannot be before ", Sys.getenv("EARLIEST_DATA_DATE")))
+    }
+  } else if (!is.null(date_end)) {
+    date_start <- Sys.getenv("EARLIEST_DATA_DATE")
+  }
+
+  if (!is.null(date_end)) {
+    if (!grepl("-01$", date_end)) {
+      stop("date_end must be the first day of a month")
+    }
+    if (date_end > current_month) {
+      stop("date_end cannot be after the first of the current month")
+    }
+  } else if (!is.null(date_start)) {
+    date_end <- current_month
+  }
+  return(list(date_start = date_start, date_end = date_end))
 }

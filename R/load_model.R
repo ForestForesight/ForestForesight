@@ -82,7 +82,7 @@ test_feature_model_match <- function(model, feature_names = NULL) {
 
   result <- tryCatch(
     {
-      xgb.importance(feature_names = feature_names, model = model)
+      xgboost::xgb.importance(feature_names = feature_names, model = model)
       return(TRUE)
     },
     error = function(e) {

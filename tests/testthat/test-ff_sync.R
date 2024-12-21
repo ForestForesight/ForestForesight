@@ -92,6 +92,32 @@ test_that("ff_sync handles different feature sets", {
     )
   )
 
+  expect_error(
+    ff_sync(
+      ff_folder = test_dir,
+      identifier = "00N_000E",
+      features = c("Low", "elevation"), # Specific features
+      date_start = "2023-01-01",
+      date_end = "2023-02-01",
+      download_model = FALSE,
+      download_predictions = FALSE,
+      verbose = FALSE
+    )
+  )
+
+  expect_error(
+    ff_sync(
+      ff_folder = test_dir,
+      identifier = "00N_000E",
+      features = c("Lowest"), # Specific features
+      date_start = "2023-01-01",
+      date_end = "2023-02-01",
+      download_model = FALSE,
+      download_predictions = FALSE,
+      verbose = FALSE
+    )
+  )
+
   # Check that feature files were downloaded
   files <- list.files(file.path(test_dir, "preprocessed", "input"), recursive = TRUE)
   expect_true(any(grepl("initialforestcover", files)))

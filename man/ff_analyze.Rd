@@ -7,7 +7,8 @@
 ff_analyze(
   predictions,
   groundtruth,
-  forest_mask = NULL,
+  forest_mask = get_variable("FOREST_MASK"),
+  forest_mask_condition = get_variable("FOREST_MASK_FILTER"),
   csv_filename = NULL,
   country = NULL,
   append = TRUE,
@@ -17,6 +18,7 @@ ff_analyze(
   tile = NULL,
   method = NA,
   add_wkt = FALSE,
+  calculate_best_threshold = FALSE,
   verbose = FALSE
 )
 }
@@ -26,6 +28,9 @@ ff_analyze(
 \item{groundtruth}{A SpatRaster object or path to raster file representing the ground truth}
 
 \item{forest_mask}{Optional SpatRaster object or path to raster file representing the forest mask}
+
+\item{forest_mask_condition}{Character. Condition to apply to forest mask. default is the environment variable
+FOREST_MASK_FILTER, normally '>0'}
 
 \item{csv_filename}{Optional path to CSV file for writing results}
 
@@ -44,6 +49,10 @@ ff_analyze(
 \item{method}{Character string indicating the analysis method}
 
 \item{add_wkt}{Logical indicating whether to add WKT geometry to output}
+
+\item{calculate_best_threshold}{Logical Whether the optimal threshold
+should be calculated before reclassifying. Can only be used on continuous
+prediction values.}
 
 \item{verbose}{Logical indicating whether to print progress messages}
 }

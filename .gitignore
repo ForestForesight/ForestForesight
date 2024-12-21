@@ -5,3 +5,5 @@
 *.xlsx#
 *.tar.gz
 .idea/
+ForestForesight.Rproj
+*.pdf

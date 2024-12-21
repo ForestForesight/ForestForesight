@@ -5,11 +5,11 @@
 \title{Prepare data for XGBoost training, validating and predicting}
 \usage{
 ff_prep(
-  datafolder = Sys.getenv("DATA_FOLDER"),
-  country = NA,
+  datafolder = get_variable("FF_FOLDER"),
+  country = get_variable("DEFAULT_COUNTRY"),
   shape = NA,
   tiles = NULL,
-  groundtruth_pattern = Sys.getenv("DEFAULT_GROUNDTRUTH"),
+  groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH"),
   dates = "2023-01-01",
   inc_features = NA,
   exc_features = NA,
@@ -98,7 +98,8 @@ A list containing:
   \item{test_indices}{Indices of the filtered samples}
   \item{groundtruth_raster}{A SpatRaster of the ground truth}
   \item{features}{A vector of feature names}
-  \item{has_groundtruth}{A boolean stating that the groundtruthraster is actually the groundtruth and not just a template}
+  \item{has_groundtruth}{A boolean stating that the groundtruthraster is
+  actually the groundtruth and not just a template}
 }
 \description{
 This function prepares data for the ForestForesight training and predicting algorithm based on specified parameters.

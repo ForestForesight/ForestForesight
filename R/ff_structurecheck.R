@@ -5,6 +5,7 @@
 #' various folders and files required for ForestForesight operations.
 #'
 #' @param shape A SpatVector object representing the area of interest.
+#' @param country The ISO-3 code of a country for which you want to do the structure check.
 #' @param folder_path Character string. Path to the main ForestForesight folder.
 #' @param check_date Character string. Date to check for in the format "YYYY-MM-DD".
 #'        If NULL, uses the first of the current month.
@@ -19,13 +20,24 @@
 #' @importFrom lubridate floor_date
 #'
 #' @export
-ff_structurecheck <- function(shape,
-                              folder_path,
+ff_structurecheck <- function(shape = NULL,
+                              country = get_variable("DEFAULT_COUNTRY"),
+                              folder_path = get_variable("FF_FOLDER"),
                               check_date = NULL,
                               error_on_issue = FALSE,
                               silent_on_pass = FALSE,
-                              groundtruth_pattern = "groundtruth6m") {
+                              groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH")) {
   # Get info from shape
+  if (!has_value(shape)) {
+    if (!has_value(country)) {
+      stop("either a country should be given or a shape in the form of a SpatVector")
+    }
+    countrylist <- get(data(countries, envir = environment()))
+    shape <- vect(countrylist)[which(countrylist$iso3 == country)]
+    if (nrow(shape) == 0) {
+      stop("incorrect country name, check iso-3 codes")
+    }
+  }
   info <- get_info(shape, verbose = FALSE)
 
   # Set check_date if not provided
@@ -48,13 +60,20 @@ check_main_folders <- function(folder_path, error_on_issue, silent_on_pass) {
   ff_cat("Checking main folder", verbose = !silent_on_pass)
   main_folders <- c("preprocessed", "models", "predictions")
   all_correct <- TRUE
-
   for (folder in main_folders) {
     if (!dir.exists(file.path(folder_path, folder))) {
-      all_correct <- FALSE
-      print_result("No", folder, "folder present",
-        color = "red"
-      )
+      if (error_on_issue && folder %in% main_folders[2:3]) {
+        dir.create(file.path(folder_path, folder), showWarnings = FALSE)
+
+        print_result("No", folder, "folder present, automatically created",
+          color = "yellow"
+        )
+      } else {
+        all_correct <- FALSE
+        print_result("No", folder, "folder present",
+          color = "red"
+        )
+      }
     } else {
       print_result(folder, "folder present",
         color = "green",
@@ -158,7 +177,8 @@ check_groundtruth <- function(files, tile, check_date, silent_on_pass, groundtru
   }
 }
 
-check_preprocessed_folders <- function(folder_path, info, check_date, error_on_issue, silent_on_pass, groundtruth_pattern) {
+check_preprocessed_folders <- function(folder_path, info,
+                                       check_date, error_on_issue, silent_on_pass, groundtruth_pattern) {
   ff_cat("Checking preprocessed folder", verbose = !silent_on_pass)
   prep_subfolders <- c("input", "groundtruth")
 
@@ -173,7 +193,10 @@ check_preprocessed_folders <- function(folder_path, info, check_date, error_on_i
         color = "green",
         silent_on_pass = silent_on_pass
       )
-      check_tile_subfolders(folder, info, subfolder, check_date, error_on_issue, silent_on_pass, groundtruth_pattern = groundtruth_pattern)
+      check_tile_subfolders(folder, info, subfolder, check_date,
+        error_on_issue, silent_on_pass,
+        groundtruth_pattern = groundtruth_pattern
+      )
     }
   }
 }
@@ -209,10 +232,18 @@ check_models_folder <- function(folder_path, info, error_on_issue, silent_on_pas
 check_model_group <- function(folder_path, group, error_on_issue, silent_on_pass) {
   group_folder <- file.path(folder_path, "models", group)
   if (!dir.exists(group_folder)) {
-    print_result("No subfolder for group", group, "in models",
-      color = "red",
-      error_on_issue = error_on_issue
-    )
+    if (error_on_issue) {
+      dir.create(group_folder, recursive = TRUE, showWarnings = FALSE)
+      print_result("No subfolder for group", group, "in models, automatically created",
+        color = "yellow",
+        error_on_issue = error_on_issue
+      )
+    } else {
+      print_result("No subfolder for group", group, "in models",
+        color = "red",
+        error_on_issue = error_on_issue
+      )
+    }
     invisible(NULL)
   }
 
@@ -271,10 +302,18 @@ check_country_predictions <- function(folder_path, cname, error_on_issue, silent
   iso3_folder <- file.path(folder_path, "predictions", iso3)
 
   if (!dir.exists(iso3_folder)) {
-    print_result(paste("No subfolder for ISO3 code", iso3, "in predictions"),
-      color = "red",
-      error_on_issue = error_on_issue
-    )
+    if (error_on_issue) {
+      dir.create(iso3_folder, recursive = TRUE, showWarnings = FALSE)
+      print_result(paste("No subfolder for ISO3 code", iso3, "in predictions, automatically created"),
+        color = "yellow",
+        error_on_issue = error_on_issue
+      )
+    } else {
+      print_result(paste("No subfolder for ISO3 code", iso3, "in predictions"),
+        color = "red",
+        error_on_issue = error_on_issue
+      )
+    }
     invisible(NULL)
   }
 
@@ -318,6 +357,7 @@ print_result <- function(...,
     invisible(NULL)
   } else {
     if (color == "red" && error_on_issue) {
+      ff_cat(statement, verbose = FALSE, log_level = "ERROR")
       stop(statement)
     } else {
       ff_cat(statement, color = color, verbose = TRUE)

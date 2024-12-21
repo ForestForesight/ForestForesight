@@ -9,27 +9,30 @@ config_load <- function(config_file_path = "") {
   }
 
   if (file.exists(config_file)) {
-    load_variables(config_file)
-    message("\nDefault config, env.yml loaded successfully.")
-
     # user_config_file is used by users to replace or supplement default configuration
-    user_config_file <- here::here("config.yml")
+    user_config_file <- file.path(get_config_dir(), "config.yml")
     if (file.exists(user_config_file)) { # optionally load the user config_file
       print("user_config_file, config.yml was found!")
       load_variables(user_config_file)
     } else {
-      message("User config file is not found the working directory")
+      message("User config file is not found in the user folder.
+              We recommend running ff_environment to create
+              your own working environment parameters.")
+      load_variables(config_file)
+      message("\nDefault config, env.yml loaded successfully.")
     }
   } else {
-    error("Default config file, env.yml does not exist. Please check the file path....")
+    stop("Default config file, env.yml does not exist. Please check the file path....")
   }
 }
-
+#' Loads the variables in the environment
+#' @noRd
 load_variables <- function(config_file) {
   library(yaml)
   # Load the YML file
   config <- yaml::yaml.load_file(config_file)
   set_env_vars <- function(config_list, prefix = "") {
+    message("setting environment variables")
     for (name in names(config_list)) {
       value <- config_list[[name]]
       var_name <- paste0(prefix, toupper(name))
@@ -44,6 +47,7 @@ load_variables <- function(config_file) {
           }
           library(base)
           do.call(Sys.setenv, stats::setNames(list(value), var_name))
+          message(var_name, ": ", value)
         }
       }
     }
