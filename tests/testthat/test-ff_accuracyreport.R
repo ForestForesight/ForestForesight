@@ -13,7 +13,7 @@ test_that("ff_accuracyreport handles different input types correctly", {
     ff_folder = datadir,
     accuracy_output_path = accuracy_file,
     importance_output_path = importance_file,
-    verbose = TRUE
+    verbose = FALSE
   )
 
   # Get test data from ff_run results
@@ -21,7 +21,7 @@ test_that("ff_accuracyreport handles different input types correctly", {
   importance_data <- result$importance_dataframe
 
   # Test 1: Path inputs
-  expect_no_error(
+  testthat::expect_no_error(
     ff_accuracyreport(
       accuracy_data = accuracy_file,
       importance_data = importance_file
@@ -29,7 +29,7 @@ test_that("ff_accuracyreport handles different input types correctly", {
   )
 
   # Test 2: Data frame inputs
-  expect_no_error(
+  testthat::expect_no_error(
     ff_accuracyreport(
       accuracy_data = accuracy_data,
       importance_data = importance_data
@@ -37,7 +37,7 @@ test_that("ff_accuracyreport handles different input types correctly", {
   )
 
   # Test 3: NULL accuracy data
-  expect_no_error(
+  testthat::expect_no_error(
     ff_accuracyreport(
       accuracy_data = NULL,
       importance_data = importance_data
@@ -45,7 +45,7 @@ test_that("ff_accuracyreport handles different input types correctly", {
   )
 
   # Test 4: NULL importance data
-  expect_no_error(
+  testthat::expect_no_error(
     ff_accuracyreport(
       accuracy_data = accuracy_data,
       importance_data = NULL
@@ -53,7 +53,7 @@ test_that("ff_accuracyreport handles different input types correctly", {
   )
 
   # Test 5: Error when both inputs are NULL
-  expect_error(
+  testthat::expect_error(
     ff_accuracyreport(
       accuracy_data = NULL,
       importance_data = NULL
@@ -63,13 +63,13 @@ test_that("ff_accuracyreport handles different input types correctly", {
 
   # Test 6: Path output
   temp_output <- tempfile(fileext = ".png")
-  expect_no_error(
+  testthat::expect_no_error(
     ff_accuracyreport(
       accuracy_data = accuracy_data,
       importance_data = importance_data,
       output_path = temp_output
     )
   )
-  expect_true(file.exists(temp_output))
-  unlink(temp_output)  # Clean up
+  testthat::expect_true(file.exists(temp_output))
+  unlink(temp_output) # Clean up
 })

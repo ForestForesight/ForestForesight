@@ -117,21 +117,7 @@ ff_environment <- function(config_file_path = "") {
   invisible(TRUE)
 }
 
-#' Get configuration directory path
-#' @return String path to configuration directory
-#' @noRd
-get_config_dir <- function() {
-  if (.Platform$OS.type == "windows") {
-    path <- file.path(Sys.getenv("APPDATA"), "forestforesight")
-  } else {
-    path <- file.path(Sys.getenv("HOME"), ".forestforesight")
-  }
-  if (!dir.exists(dirname(path))) {
-    path <- file.path(here::here())
-  }
-  if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  path
-}
+
 
 #' Parameter validation functions
 #' @noRd

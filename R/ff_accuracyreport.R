@@ -40,13 +40,18 @@ ff_accuracyreport <- function(accuracy_data = NULL,
                               output_path = NULL,
                               title = "Accuracy Analysis: Forest Foresight",
                               new_window = FALSE) {
+  if (is.null(output_path) && !interactive()) {
+    invisible(NULL)
+  }
   # Load data
   results <- load_accuracy_data(accuracy_data)
   importance_results <- load_importance_data(importance_data)
 
   # Stop if no data is provided
   if (is.null(results) && is.null(importance_results)) {
-    stop("Either accuracy_data or importance_data must be provided")
+    ff_cat("No accuracy report created.
+           Either accuracy_data or importance_data must be provided")
+    invisible(NULL)
   }
 
   # Only process accuracy data if it exists
@@ -59,27 +64,33 @@ ff_accuracyreport <- function(accuracy_data = NULL,
   if (!is.null(output_path)) {
     output_path <- sub("\\.pdf$", ".png", output_path)
     png(output_path, width = 16.5, height = 11.7, units = "in", res = 300)
-    plots <- create_plots(results, importance_results, spatial_data, results_by_date, title)
+    create_plots(results, importance_results, spatial_data, results_by_date, title)
     dev.off()
   }
 
   if (new_window) {
-    X11(width = 16.5, height = 11.7,
-        pointsize = 12,
-        gamma = 1,
-        bg = "white",
-        canvas = "white",
-        fonts = NULL,
-        family = "",
-        xpos = NA,
-        ypos = NA,
-        title = title,
-        type = "cairo",
-        antialias = "default",
-        symbolfamily = "default")
+    X11(
+      width = 16.5, height = 11.7,
+      pointsize = 12,
+      gamma = 1,
+      bg = "white",
+      canvas = "white",
+      fonts = NULL,
+      family = "",
+      xpos = NA,
+      ypos = NA,
+      title = title,
+      type = "cairo",
+      antialias = "default",
+      symbolfamily = "default"
+    )
   }
 
-  plots <- create_plots(results, importance_results, spatial_data, results_by_date, title)
+  create_plots(
+    results = results, importance_results = importance_results,
+    spatial_data = spatial_data,
+    results_by_date = results_by_date, title = title
+  )
 }
 
 #' Load and Process Importance Data
@@ -113,7 +124,7 @@ load_importance_data <- function(importance_data) {
 #' @return Vector of calculated metrics
 #' @keywords internal
 #' @noRd
-calculate_metrics <- function(TP, FP, TN, FN) {
+calculate_report_metrics <- function(TP, FP, TN, FN) {
   precision <- TP / (TP + FP)
   recall <- TP / (TP + FN)
   f0_5_score <- (1.25 * precision * recall) / (0.25 * precision + recall)
@@ -139,7 +150,7 @@ prepare_spatial_data <- function(results) {
   metrics_by_uuid <- t(apply(
     results_by_uuid[, c("TP", "FP", "TN", "FN")],
     1,
-    function(row) calculate_metrics(row[1], row[2], row[3], row[4])
+    function(row) calculate_report_metrics(row[1], row[2], row[3], row[4])
   ))
 
   results_by_uuid <- cbind(results_by_uuid, metrics_by_uuid)
@@ -147,7 +158,6 @@ prepare_spatial_data <- function(results) {
   names(spatialdata)[12:15] <- c("precision", "recall", "F05", "events")
   spatialdata$F05 <- as.numeric(spatialdata$F05)
   spatialdata <- spatialdata[!is.nan(spatialdata$F05), ]
-
   return(spatialdata)
 }
 
@@ -166,7 +176,7 @@ calculate_metrics_by_date <- function(results) {
   metrics_by_date <- as.data.frame(t(apply(
     results_by_date[, c("TP", "FP", "TN", "FN")],
     1,
-    function(row) calculate_metrics(row[1], row[2], row[3], row[4])
+    function(row) calculate_report_metrics(row[1], row[2], row[3], row[4])
   )))
 
   results_by_date <- cbind(results_by_date, metrics_by_date)
@@ -202,11 +212,12 @@ create_f05_map <- function(spatialdata) {
   breaks <- seq(minf05, maxf05, length.out = 10)
 
   plot(spatialdata, "F05",
-       main = "F0.5 Score Distribution",
-       col = col_palette,
-       border = "#00000000",
-       breaks = breaks,
-       legend = TRUE)
+    main = "F0.5 Score Distribution",
+    col = col_palette,
+    border = "#00000000",
+    breaks = breaks,
+    legend = TRUE
+  )
 }
 
 #' Create Metrics Over Time Plot
@@ -221,11 +232,12 @@ create_metrics_plot <- function(results_by_date) {
   y_breaks <- pretty(c(0, max_events), n = 10)
 
   plot(results_by_date$date, results_by_date$events,
-       type = "h", col = "lightgrey", lwd = 10,
-       xlab = "", ylab = "",
-       main = "Precision, Recall, and F0.5 Over Time",
-       ylim = c(0, max(y_breaks)),
-       axes = FALSE)
+    type = "h", col = "lightgrey", lwd = 10,
+    xlab = "", ylab = "",
+    main = "Precision, Recall, and F0.5 Over Time",
+    ylim = c(0, max(y_breaks)),
+    axes = FALSE
+  )
 
   # Add axes and formatting
   format_metrics_plot(results_by_date, max_events, y_breaks)
@@ -278,10 +290,11 @@ add_metrics_lines <- function(results_by_date, max_events) {
 
   # Add legend
   legend("topright",
-         legend = c("Precision", "Recall", "F0.5", "Events"),
-         col = c("blue", "red", "green", "lightgrey"),
-         lty = c(1, 1, 1, 1), lwd = c(2, 2, 2, 10),
-         pch = c(16, 16, 16, NA))
+    legend = c("Precision", "Recall", "F0.5", "Events"),
+    col = c("blue", "red", "green", "lightgrey"),
+    lty = c(1, 1, 1, 1), lwd = c(2, 2, 2, 10),
+    pch = c(16, 16, 16, NA)
+  )
 }
 
 #' Create Feature Importance Plot
@@ -328,49 +341,55 @@ prepare_importance_data <- function(importance_results) {
 #' @noRd
 plot_importance_data <- function(importance_data) {
   plot(importance_data$importance,
-       1:nrow(importance_data),
-       type = "n",
-       log = "x",
-       xlim = c(min(importance_data$importance) / 2, max(importance_data$importance) * 1.2),
-       ylim = c(0, nrow(importance_data) + 1),
-       xlab = "Importance (log scale)",
-       ylab = "",
-       yaxt = "n",
-       main = importance_data$model_name[1],
-       cex.main = 1.5,
-       cex.lab = 1.2)
+    seq_len(nrow(importance_data)),
+    type = "n",
+    log = "x",
+    xlim = c(min(importance_data$importance) / 2, max(importance_data$importance) * 1.2),
+    ylim = c(0, nrow(importance_data) + 1),
+    xlab = "Importance (log scale)",
+    ylab = "",
+    yaxt = "n",
+    main = importance_data$model_name[1],
+    cex.main = 1.5,
+    cex.lab = 1.2
+  )
 
   # Add horizontal bars
   barplot_height <- 0.8
-  for (i in 1:nrow(importance_data)) {
+  for (i in seq_len(nrow(importance_data))) {
     rect(min(importance_data$importance) / 2,
-         i - barplot_height / 2,
-         importance_data$importance[i],
-         i + barplot_height / 2,
-         col = "lightgreen",
-         border = NA)
+      i - barplot_height / 2,
+      importance_data$importance[i],
+      i + barplot_height / 2,
+      col = "lightgreen",
+      border = NA
+    )
   }
 
   # Add feature names on the left side
   text(min(importance_data$importance) / 2,
-       1:nrow(importance_data),
-       labels = importance_data$feature,
-       pos = 2,
-       xpd = TRUE,
-       cex = 0.7)
+    seq_len(nrow(importance_data)),
+    labels = importance_data$feature,
+    pos = 2,
+    xpd = TRUE,
+    cex = 0.7
+  )
 
   # Add percentage values on the right side of bars
   text(importance_data$importance,
-       1:nrow(importance_data),
-       labels = sprintf("%.2f%%", importance_data$percentage),
-       pos = 4,
-       cex = 0.7)
+    seq_len(nrow(importance_data)),
+    labels = sprintf("%.2f%%", importance_data$percentage),
+    pos = 4,
+    cex = 0.7
+  )
 
   # Add gridlines
-  grid(nx = NULL,
-       ny = NA,
-       lty = 2,
-       col = "gray")
+  grid(
+    nx = NULL,
+    ny = NA,
+    lty = 2,
+    col = "gray"
+  )
 }
 
 
@@ -402,7 +421,6 @@ create_plots <- function(results = NULL,
                          spatial_data = NULL,
                          results_by_date = NULL,
                          title = "Accuracy Analysis: Forest Foresight") {
-
   # Input validation
   if (!is.null(results) && (is.null(spatial_data) || is.null(results_by_date))) {
     stop("If results is provided, spatial_data and results_by_date must also be provided")
@@ -432,4 +450,85 @@ create_plots <- function(results = NULL,
   # Add title
   mtext(title, outer = TRUE, line = -2, cex = 1.5)
   return(plots)
+}
+
+#' Load and Process Accuracy Data
+#'
+#' Loads and processes accuracy data from various input types (data frame, SpatVector,
+#' or file paths). Validates required columns and creates UUID if needed.
+#'
+#' @param accuracy_data Input data in one of three formats:
+#'   \itemize{
+#'     \item data.frame with required columns
+#'     \item SpatVector object containing required attributes
+#'     \item Character vector of file paths to CSV files containing required columns
+#'   }
+#'
+#' @return A data frame containing the processed accuracy data with the following columns:
+#'   \itemize{
+#'     \item TP - True Positives (required)
+#'     \item FP - False Positives (required)
+#'     \item TN - True Negatives (required)
+#'     \item FN - False Negatives (required)
+#'     \item UUID - Unique identifier (created from iso3_coordname if not present)
+#'     \item geom - WKT geometry (only when input is SpatVector)
+#'   }
+#'
+#' @details
+#' The function requires either a pre-computed UUID column or both 'iso3' and 'coordname'
+#' columns to create one. If a column named 'name' exists, it will be renamed to 'country'.
+#'
+#'
+#' @import terra
+#' @keywords internal
+#' @noRd
+load_accuracy_data <- function(accuracy_data) {
+  if (is.null(accuracy_data)) {
+    return(NULL)
+  }
+
+  # Handle different input types
+  if (is.data.frame(accuracy_data)) {
+    results <- accuracy_data
+  } else if (inherits(accuracy_data, "SpatVector")) {
+    # Convert SpatVector to data.frame while preserving geometry as WKT
+    results <- as.data.frame(accuracy_data)
+    results$geom <- terra::geom(accuracy_data, wkt = TRUE)
+  } else if (is.character(accuracy_data)) {
+    results <- do.call(rbind, lapply(accuracy_data, read.csv))
+  } else {
+    stop("accuracy_data must be either a data frame, SpatVector, or vector of file paths")
+  }
+
+  # Check for required accuracy metric columns
+  required_metrics <- c("TP", "FP", "TN", "FN")
+  if (!all(required_metrics %in% names(results))) {
+    missing_metrics <- setdiff(required_metrics, names(results))
+    stop(sprintf(
+      "Missing required accuracy metric columns: %s",
+      paste(missing_metrics, collapse = ", ")
+    ))
+  }
+
+  # Only create UUID if it doesn't exist
+  if (!"UUID" %in% names(results)) {
+    # Check if required columns exist
+    if (!all(c("iso3", "coordname") %in% names(results))) {
+      missing_cols <- setdiff(c("iso3", "coordname"), names(results))
+      stop(sprintf(
+        "Cannot create UUID column. Missing required columns: %s.
+        Either provide these columns or include a pre-computed UUID column.",
+        paste(missing_cols, collapse = ", ")
+      ))
+    }
+    results$UUID <- paste0(results$iso3, "_", results$coordname)
+    ff_cat("UUID column created from iso3 and coordname columns", color = "yellow")
+  }
+
+  # Rename 'name' to 'country' if it exists
+  if ("name" %in% names(results)) {
+    names(results)[which(names(results) == "name")] <- "country"
+  }
+
+  return(results)
 }

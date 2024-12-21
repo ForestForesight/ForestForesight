@@ -54,16 +54,3 @@ load_variables <- function(config_file) {
   }
   set_env_vars(config)
 }
-
-#' Get configuration directory path
-#' @return String path to configuration directory
-#' @noRd
-get_config_dir <- function() {
-  if (.Platform$OS.type == "windows") {
-    path <- file.path(Sys.getenv("APPDATA"), "forestforesight")
-  } else {
-    path <- file.path(Sys.getenv("HOME"), ".forestforesight")
-  }
-  if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  path
-}

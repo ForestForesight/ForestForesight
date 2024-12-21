@@ -81,12 +81,8 @@
 #' )
 #' }
 #'
-#' @seealso
-#' [smoothr::ksmooth()] for details on the smoothing algorithm
-#' [terra::focal()] for details on focal operations
-#'
 #' @import terra
-#' @import smoothr
+#' @importFrom smoothr smooth fill_holes
 #'
 #' @export
 ff_polygonize <- function(input_raster,
@@ -108,7 +104,9 @@ ff_polygonize <- function(input_raster,
 
   # Process raster and determine threshold
   processed_raster <- process_raster(input_raster, threshold,
-                                     window_size, verbose = verbose)
+    window_size,
+    verbose = verbose
+  )
   if (is.null(processed_raster)) {
     return(NULL)
   }
@@ -372,15 +370,16 @@ apply_max_count_filter <- function(polygons,
     max_count <- ceiling(max_count * percentage_covered)
 
 
-      ff_cat(
-        "based on area of raster (hectares:",
-        round(area_ha),
-        ", actual coverage:",
-        round(percentage_covered * 100),
-        "percent), at maximum",
-        max_count,
-        " polygons are generated", verbose = verbose
-      )
+    ff_cat(
+      "based on area of raster (hectares:",
+      round(area_ha),
+      ", actual coverage:",
+      round(percentage_covered * 100),
+      "percent), at maximum",
+      max_count,
+      " polygons are generated",
+      verbose = verbose
+    )
   } else {
     if (has_value(max_polygons)) {
       max_count <- max_polygons
