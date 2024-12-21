@@ -138,7 +138,9 @@ ff_run <- function(shape = NULL,
     accuracy_output_path, country, predictions_save_path, verbose
   )
   risk_zones <- run_risk_zones(prediction_data$predictions,
-                               risk_zones_save_path, dates = prediction_dates, verbose = verbose)
+    risk_zones_save_path,
+    dates = prediction_dates, verbose = verbose
+  )
   ff_accuracyreport(
     accuracy_data = prediction_data$accuracy_polygons,
     importance_data = importance_dataframe, output_path = accuracy_report_path
@@ -694,7 +696,8 @@ analyze_predictions <- function(ff_folder, shape, tile, prediction, prediction_d
 
 
     analysis_polygons <- terra::intersect(
-      terra::vect(get(data("degree_polygons", envir = environment()))), terra::aggregate(shape))
+      terra::vect(get(data("degree_polygons", envir = environment()))), terra::aggregate(shape)
+    )
     polygons <- ff_analyze(prediction$predicted_raster > certainty_threshold,
       groundtruth = prediction_input_data$groundtruth_raster,
       csv_filename = accuracy_output_path, tile = tile, date = prediction_date,

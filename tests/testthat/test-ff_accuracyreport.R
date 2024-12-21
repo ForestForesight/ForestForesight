@@ -53,7 +53,7 @@ test_that("ff_accuracyreport handles different input types correctly", {
   )
 
   # Test 5: Error when both inputs are NULL
-  result=ff_accuracyreport(
+  result <- ff_accuracyreport(
     accuracy_data = NULL,
     importance_data = NULL
   )

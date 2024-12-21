@@ -390,8 +390,10 @@ find_best_threshold <- function(prediction, groundtruth, optimize_function = get
   }
 
   # Return the best threshold and the corresponding F-score
-  return(list(best_threshold = (a + b) / 2, max_f_score =
-                optimize_function(groundtruth, prediction, ((a + b) / 2), beta)))
+  return(list(
+    best_threshold = (a + b) / 2, max_f_score =
+      optimize_function(groundtruth, prediction, ((a + b) / 2), beta)
+  ))
 }
 
 

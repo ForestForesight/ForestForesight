@@ -64,7 +64,8 @@ ff_analyze <- function(predictions, groundtruth, forest_mask = get_variable("FOR
   # Add metadata
   ff_cat("adding metadata", verbose = verbose)
   polygons <- add_metadata(polygons, date, method, remove_empty,
-                           threshold = predictions_and_threshold$threshold, verbose)
+    threshold = predictions_and_threshold$threshold, verbose
+  )
 
   # Process output and write to file if specified
   process_and_write_output(polygons, csv_filename, append, add_wkt, verbose)

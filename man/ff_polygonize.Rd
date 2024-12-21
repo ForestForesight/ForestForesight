@@ -112,7 +112,3 @@ result <- ff_polygonize("input.tif",
 }
 
 }
-\seealso{
-[smoothr::ksmooth()] for details on the smoothing algorithm
-[terra::focal()] for details on focal operations
-}
