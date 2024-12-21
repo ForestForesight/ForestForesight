@@ -35,7 +35,8 @@
 #' @return A list containing:
 #'   \item{prediction_timeseries}{A SpatRaster object or RasterStack containing the predicted deforestation
 #'         probabilities for each prediction date}
-#'   \item{risk_zones}{A nested list with per date three SpatVectors on Medium, High and Very High Risk level risk zones}
+#'   \item{risk_zones}{A nested list with per date three SpatVectors on
+#'   Medium, High and Very High Risk level risk zones}
 #'   \item{shape}{The SpatVector object used for analysis, either from direct input or derived from country code}
 #'   \item{model}{Path to the model used for predictions (either newly trained or pretrained)}
 #'   \item{accuracy_dataframe}{A SpatialPolygonsDataFrame containing accuracy metrics for each analyzed area.
@@ -84,6 +85,7 @@ ff_run <- function(shape = NULL,
                    model_save_path = NULL,
                    predictions_save_path = NULL,
                    risk_zones_save_path = NULL,
+                   accuracy_report_path = NULL,
                    pretrained_model_path = NULL,
                    ff_prep_parameters = NULL,
                    ff_train_parameters = NULL,
@@ -124,7 +126,7 @@ ff_run <- function(shape = NULL,
     name = if (has_value(country)) {
       country
     } else {
-      NA
+      NULL
     }
   )
 
@@ -135,7 +137,14 @@ ff_run <- function(shape = NULL,
     pretrained_model_path, certainty_threshold,
     accuracy_output_path, country, predictions_save_path, verbose
   )
-  risk_zones <- run_risk_zones(prediction_data$predictions, risk_zones_save_path, dates = prediction_dates)
+  risk_zones <- run_risk_zones(prediction_data$predictions,
+    risk_zones_save_path,
+    dates = prediction_dates, verbose = verbose
+  )
+  ff_accuracyreport(
+    accuracy_data = prediction_data$accuracy_polygons,
+    importance_data = importance_dataframe, output_path = accuracy_report_path
+  )
   return(list(
     predictions = prediction_data$predictions,
     risk_zones = risk_zones,
@@ -686,19 +695,20 @@ analyze_predictions <- function(ff_folder, shape, tile, prediction, prediction_d
     forest_mask <- create_forest_mask(ff_folder, tile, prediction_date, filter_features, filter_conditions)
 
 
-    analysis_polygons <- terra::intersect(terra::vect(get(data("degree_polygons"))), terra::aggregate(shape))
+    analysis_polygons <- terra::intersect(
+      terra::vect(get(data("degree_polygons", envir = environment()))), terra::aggregate(shape)
+    )
     polygons <- ff_analyze(prediction$predicted_raster > certainty_threshold,
       groundtruth = prediction_input_data$groundtruth_raster,
       csv_filename = accuracy_output_path, tile = tile, date = prediction_date,
       append = TRUE, country = country,
       verbose = verbose, forest_mask = forest_mask, analysis_polygons = analysis_polygons
     )
-    if (verbose) {
-      if (!has_value(merged_polygons)) {
-        merged_polygons <- polygons
-      } else {
-        merged_polygons <- rbind(merged_polygons, polygons)
-      }
+
+    if (!has_value(merged_polygons)) {
+      merged_polygons <- polygons
+    } else {
+      merged_polygons <- rbind(merged_polygons, polygons)
     }
   } else {
     ff_cat("no analysis is done because no groundtruth is available", color = "green", verbose = verbose)
@@ -921,6 +931,7 @@ run_predictions <- function(ff_folder, shape, groundtruth_pattern, prediction_da
         model = pretrained_model_path, test_matrix = prediction_input_data$feature_dataset,
         indices = prediction_input_data$test_indices,
         templateraster = prediction_input_data$groundtruth_raster,
+        groundtruth = prediction_input_data$feature_dataset$label,
         verbose = verbose, certainty = TRUE
       )
       raster_list[[tile]] <- prediction$predicted_raster
@@ -1042,14 +1053,14 @@ modify_filepath <- function(filepath, risk_level, date = NULL) {
 process_risk_level <- function(raster_layer, output_path, risk_level,
                                date = NULL, max_polygons = NULL,
                                contain_polygons = NULL,
-                               calculate_max_count = FALSE) {
+                               calculate_max_count = FALSE, verbose) {
   output_file <- modify_filepath(output_path, risk_level, date)
 
   risk_result <- ff_polygonize(
     raster_layer,
     threshold = gsub("_", " ", risk_level),
     output_file = output_file,
-    verbose = TRUE,
+    verbose = verbose,
     max_polygons = max_polygons,
     contain_polygons = contain_polygons,
     calculate_max_count = calculate_max_count
@@ -1075,7 +1086,7 @@ process_risk_level <- function(raster_layer, output_path, risk_level,
 #' @return Named list of SpatVector objects for each risk level
 #' @keywords internal
 #' @noRd
-process_single_date <- function(raster_layer, output_path, date = NULL) {
+process_single_date <- function(raster_layer, output_path, date = NULL, verbose) {
   result_list <- list()
 
   # Process medium risk
@@ -1084,7 +1095,7 @@ process_single_date <- function(raster_layer, output_path, date = NULL) {
     output_path = output_path,
     risk_level = "medium",
     date = date,
-    calculate_max_count = TRUE
+    calculate_max_count = TRUE, verbose = verbose
   )
 
   if (!has_value(medium_risk_result$polygons)) {
@@ -1098,6 +1109,7 @@ process_single_date <- function(raster_layer, output_path, date = NULL) {
     raster_layer = raster_layer,
     output_path = output_path,
     risk_level = "high",
+    verbose = verbose,
     date = date,
     max_polygons = medium_risk_result$max_count,
     contain_polygons = medium_risk_result$polygons
@@ -1114,6 +1126,7 @@ process_single_date <- function(raster_layer, output_path, date = NULL) {
     raster_layer = raster_layer,
     output_path = output_path,
     risk_level = "very_high",
+    verbose = verbose,
     date = date,
     max_polygons = medium_risk_result$max_count,
     contain_polygons = high_risk_result$polygons
@@ -1158,14 +1171,16 @@ process_single_date <- function(raster_layer, output_path, date = NULL) {
 #' medium_risk <- polygons$`2024-01-01`$medium
 #'
 #' # With multiple dates
-#' polygons <- run_risk_zones(prediction_raster, "/path/to/folder/polygons.shp",
-#'                           c("2024-01-01", "2024-01-02"))
+#' polygons <- run_risk_zones(
+#'   prediction_raster, "/path/to/folder/polygons.shp",
+#'   c("2024-01-01", "2024-01-02")
+#' )
 #'
 #' # Access medium risk polygons for first date
 #' medium_risk_day1 <- polygons$`2024-01-01`$medium
 #' }
 #' @noRd
-run_risk_zones <- function(prediction_raster, risk_zones_output_path = NULL, dates = NULL) {
+run_risk_zones <- function(prediction_raster, risk_zones_output_path = NULL, dates = NULL, verbose) {
   if (is.null(prediction_raster)) {
     invisible(NULL)
   }
@@ -1183,7 +1198,7 @@ run_risk_zones <- function(prediction_raster, risk_zones_output_path = NULL, dat
         result_list[[dates[i]]] <- process_single_date(
           prediction_raster[[i]],
           risk_zones_output_path,
-          dates[i]
+          dates[i], verbose
         )
       }
     } else {
@@ -1192,12 +1207,12 @@ run_risk_zones <- function(prediction_raster, risk_zones_output_path = NULL, dat
       result_list[[dates]] <- process_single_date(
         prediction_raster,
         risk_zones_output_path,
-        dates
+        dates, verbose
       )
     }
   } else {
     # Process without dates
-    result_list <- process_single_date(prediction_raster, risk_zones_output_path)
+    result_list <- process_single_date(prediction_raster, risk_zones_output_path, verbose = verbose)
   }
 
   return(result_list)

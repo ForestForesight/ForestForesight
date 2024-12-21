@@ -63,7 +63,9 @@ ff_analyze <- function(predictions, groundtruth, forest_mask = get_variable("FOR
 
   # Add metadata
   ff_cat("adding metadata", verbose = verbose)
-  polygons <- add_metadata(polygons, date, method, remove_empty, threshold = predictions_and_threshold$threshold, verbose)
+  polygons <- add_metadata(polygons, date, method, remove_empty,
+    threshold = predictions_and_threshold$threshold, verbose
+  )
 
   # Process output and write to file if specified
   process_and_write_output(polygons, csv_filename, append, add_wkt, verbose)
@@ -318,7 +320,8 @@ process_and_write_output <- function(polygons, csv_filename = NULL, append = TRU
 #' @return SpatRaster. Binary classified raster with values 0 and 1.
 #'
 #' @noRd
-reclassify_predictions <- function(predictions, groundtruth, forest_mask, calculate_best_threshold, filter_condition, verbose) {
+reclassify_predictions <- function(predictions, groundtruth,
+                                   forest_mask, calculate_best_threshold, filter_condition, verbose) {
   threshold <- get_variable("DEFAULT_THRESHOLD")
   # Check and reclassify predictions if needed. multiply by 100 because freq automatically turns to integer
   classified <- nrow(terra::freq(predictions, digits = 2)) < 3

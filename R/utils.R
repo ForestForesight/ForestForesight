@@ -390,5 +390,22 @@ find_best_threshold <- function(prediction, groundtruth, optimize_function = get
   }
 
   # Return the best threshold and the corresponding F-score
-  return(list(best_threshold = (a + b) / 2, max_f_score = optimize_function(groundtruth, prediction, ((a + b) / 2), beta)))
+  return(list(
+    best_threshold = (a + b) / 2, max_f_score =
+      optimize_function(groundtruth, prediction, ((a + b) / 2), beta)
+  ))
+}
+
+
+#' Get configuration directory path
+#' @return String path to configuration directory
+#' @noRd
+get_config_dir <- function() {
+  if (.Platform$OS.type == "windows") {
+    path <- file.path(Sys.getenv("APPDATA"), "forestforesight")
+  } else {
+    path <- file.path(Sys.getenv("HOME"), ".forestforesight")
+  }
+  if (!dir.exists(path)) dir.create(path, recursive = TRUE)
+  path
 }
