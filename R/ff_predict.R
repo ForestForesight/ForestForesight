@@ -105,7 +105,11 @@ remove_extra_features <- function(test_matrix, loaded_model) {
   if (has_value(loaded_model$feature_names)) {
     test_features <- colnames(test_matrix$features)
     extra_features <- setdiff(test_features, loaded_model$feature_names)
-
+    missing_features <- setdiff(loaded_model$feature_names, test_features)
+    if (length(missing_features) > 0) {
+      stop(paste("the following features are not present in your datafolder but are required in the model:",
+                 paste(missing_features, collapse = ", ")))
+    }
     if (length(extra_features) > 0) {
       ff_cat(
         "Removing extra features from the test matrix:",

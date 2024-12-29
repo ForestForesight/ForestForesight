@@ -698,7 +698,11 @@ analyze_predictions <- function(ff_folder, shape, tile, prediction, prediction_d
     analysis_polygons <- terra::intersect(
       terra::vect(get(data("degree_polygons", envir = environment()))), terra::aggregate(shape)
     )
-    polygons <- ff_analyze(prediction$predicted_raster > certainty_threshold,
+    polygons <- ff_analyze(if(has_value(certainty_threshold)){
+      prediction$predicted_raster > certainty_threshold
+      }else{
+        prediction$predicted_raster
+        },calculate_best_threshold = !has_value(certainty_threshold),
       groundtruth = prediction_input_data$groundtruth_raster,
       csv_filename = accuracy_output_path, tile = tile, date = prediction_date,
       append = TRUE, country = country,
