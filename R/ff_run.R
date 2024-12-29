@@ -112,6 +112,7 @@ ff_run <- function(shape = NULL,
   prediction_dates <- corrected_date_input$prediction_dates
   shape <- shape_and_tiles$shape
   tiles <- shape_and_tiles$tiles
+  country <- shape_and_tiles$country
 
   pretrained_model_path <- prepare_and_train_model(
     ff_folder, shape, corrected_date_input$train_dates,
@@ -351,6 +352,7 @@ check_folder_and_input <- function(ff_folder, country, shape, train_dates, predi
   if (has_value(shape) && has_value(country)) {
     if (!country == get_variable("DEFAULT_COUNTRY")) {
       ff_cat("the input shape is given precedence over the country code")
+      country <- NULL
     }
   }
   if (has_value(shape)) {
@@ -383,7 +385,7 @@ check_folder_and_input <- function(ff_folder, country, shape, train_dates, predi
     error_on_issue = TRUE, silent_on_pass = TRUE
   )
 
-  return(list(shape = shape, tiles = tiles))
+  return(list(shape = shape, tiles = tiles, country = country))
 }
 
 #' Determine Sample Fraction for Training Data
