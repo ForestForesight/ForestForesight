@@ -40,8 +40,10 @@ ff_accuracyreport <- function(accuracy_data = NULL,
                               output_path = NULL,
                               title = "Accuracy Analysis: Forest Foresight",
                               new_window = FALSE) {
-  ff_accuracyreport_input_check(accuracy_data, importance_data,
-                                            output_path, title, new_window)
+  ff_accuracyreport_input_check(
+    accuracy_data, importance_data,
+    output_path, title, new_window
+  )
   # Stop if no data is provided
   if (is.null(accuracy_data) && is.null(importance_data)) {
     ff_cat("No accuracy report created.
@@ -546,7 +548,6 @@ load_accuracy_data <- function(accuracy_data) {
 #' @noRd
 ff_accuracyreport_input_check <- function(accuracy_data, importance_data,
                                           output_path, title, new_window) {
-
   # Accuracy data can be character vector, data.frame, or SpatVector
   check_object_class(accuracy_data, c("character", "data.frame", "SpatVector"))
 

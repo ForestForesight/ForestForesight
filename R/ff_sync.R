@@ -46,11 +46,13 @@ ff_sync <- function(ff_folder = get_variable("FF_FOLDER"),
                     groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH"),
                     bucket = "forestforesight-public", region = "eu-west-1",
                     verbose = TRUE) {
-  ff_sync_input_check(ff_folder, identifier, features,
-                      date_start, date_end, download_model,
-                      download_data, download_groundtruth,
-                      groundtruth_pattern, download_predictions,
-                      bucket, region, verbose)
+  ff_sync_input_check(
+    ff_folder, identifier, features,
+    date_start, date_end, download_model,
+    download_data, download_groundtruth,
+    groundtruth_pattern, download_predictions,
+    bucket, region, verbose
+  )
   # Validate and process dates
   sync_dates <- sync_initialize_and_check(ff_folder, date_start, date_end, features)
   date_start <- sync_dates$date_start
@@ -121,9 +123,9 @@ ff_sync_get_features <- function(features, ff_folder) {
       if (features == "small model") {
         # Find and load small model RDA files
         model_files <- list.files(file.path(ff_folder, "models"),
-                                  pattern = "small\\.rda$",
-                                  recursive = TRUE,
-                                  full.names = TRUE
+          pattern = "small\\.rda$",
+          recursive = TRUE,
+          full.names = TRUE
         )
         if (length(model_files) == 0) {
           stop("no models were found. Either change download_model to TRUE or choose another option for features")
@@ -135,11 +137,11 @@ ff_sync_get_features <- function(features, ff_folder) {
         # Load feature metadata
         feature_metadata <- get(data("feature_metadata", envir = environment()))
         importance_levels <- switch(features,
-                                    "highest" = c("Highest"),
-                                    "high" = c("Highest", "High"),
-                                    "medium" = c("Highest", "High", "Medium"),
-                                    "low" = c("Highest", "High", "Medium", "Low"),
-                                    "everything" = unique(feature_metadata$importance)
+          "highest" = c("Highest"),
+          "high" = c("Highest", "High"),
+          "medium" = c("Highest", "High", "Medium"),
+          "low" = c("Highest", "High", "Medium", "Low"),
+          "everything" = unique(feature_metadata$importance)
         )
         feature_list <- feature_metadata$name[feature_metadata$importance %in% importance_levels]
       } else {
@@ -194,8 +196,8 @@ groundtruth_downloader <- function(ff_folder, tile, dates_to_check, bucket, regi
     if (!file.exists(file.path(ff_folder, file))) {
       ff_cat(file, verbose = verbose)
       aws.s3::save_object(file,
-                          bucket = bucket, region = region,
-                          file = file.path(ff_folder, file), verbose = FALSE
+        bucket = bucket, region = region,
+        file = file.path(ff_folder, file), verbose = FALSE
       )
     }
   }
@@ -248,8 +250,8 @@ model_downloader <- function(ff_folder, country_codes, bucket, region, verbose) 
     for (file in s3_files) {
       ff_cat(file, verbose = verbose)
       aws.s3::save_object(file,
-                          bucket = bucket, region = region,
-                          file = file.path(ff_folder, file), verbose = FALSE
+        bucket = bucket, region = region,
+        file = file.path(ff_folder, file), verbose = FALSE
       )
     }
   }
@@ -287,8 +289,8 @@ data_downloader <- function(ff_folder, tile, feature_list, dates_to_check, bucke
       if (!file.exists(file.path(ff_folder, file))) {
         ff_cat(file, verbose = verbose)
         aws.s3::save_object(file,
-                            bucket = bucket, region = region,
-                            file = file.path(ff_folder, file), verbose = FALSE
+          bucket = bucket, region = region,
+          file = file.path(ff_folder, file), verbose = FALSE
         )
       }
     }
@@ -318,19 +320,19 @@ prediction_downloader <- function(ff_folder, country_codes, dates_to_check, buck
     }
     if (has_value(s3_files)) {
       ff_cat("Downloading predictions to", pred_folder,
-             verbose = verbose
+        verbose = verbose
       )
     } else {
       ff_cat("no prediction files found for given dates",
-             color = "yellow", verbose = verbose
+        color = "yellow", verbose = verbose
       )
     }
     for (file in s3_files) {
       if (!file.exists(file.path(ff_folder, file))) {
         ff_cat(file, verbose = verbose)
         aws.s3::save_object(file,
-                            bucket = bucket, region = region,
-                            file = file.path(ff_folder, file), verbose = FALSE
+          bucket = bucket, region = region,
+          file = file.path(ff_folder, file), verbose = FALSE
         )
       }
     }
@@ -376,14 +378,14 @@ sync_initialize_and_check <- function(ff_folder, date_start, date_end, features)
   ff_features <- ff_features[ff_features$source != "autogenerated", ]$name
   if (length(features) == 1) {
     if (!((casefold(features) %in%
-           c(ff_features, c("highest", "high", "medium", "low", "everything", "small model"))))) {
+      c(ff_features, c("highest", "high", "medium", "low", "everything", "small model"))))) {
       stop("incorrect feature option given. please give a vector of feature names
     or choose between:
          Highest, High, Medium, Low, Everything, Small Model")
     }
   } else {
     if (!all((casefold(features) %in%
-              ff_features))) {
+      ff_features))) {
       stop("incorrect feature option given. please give a vector of feature names
     or choose between:
          Highest, High, Medium, Low, Everything, Small Model")
@@ -440,7 +442,6 @@ ff_sync_input_check <- function(ff_folder, identifier, features,
                                 download_data, download_groundtruth,
                                 groundtruth_pattern, download_predictions,
                                 bucket, region, verbose) {
-
   check_object_class(ff_folder, "character")
   check_object_class(identifier, c("character", "SpatVector"))
   check_object_class(features, "character")

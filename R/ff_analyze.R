@@ -31,11 +31,13 @@ ff_analyze <- function(predictions, groundtruth, forest_mask = get_variable("FOR
                        country = NULL, append = TRUE, analysis_polygons = NULL,
                        remove_empty = TRUE, date = NULL, tile = NULL, method = NA,
                        add_wkt = FALSE, calculate_best_threshold = FALSE, verbose = FALSE) {
-  ff_analyze_input_check(predictions, groundtruth, forest_mask,
-                                     forest_mask_condition, csv_filename, country,
-                                     append, analysis_polygons, remove_empty, date,
-                                     tile, method, add_wkt, calculate_best_threshold,
-                                     verbose)
+  ff_analyze_input_check(
+    predictions, groundtruth, forest_mask,
+    forest_mask_condition, csv_filename, country,
+    append, analysis_polygons, remove_empty, date,
+    tile, method, add_wkt, calculate_best_threshold,
+    verbose
+  )
   # Get date if not provided
   if (is.null(date)) {
     date <- get_date_from_files(predictions, groundtruth)
@@ -499,7 +501,6 @@ ff_analyze_input_check <- function(predictions, groundtruth, forest_mask,
                                    append, analysis_polygons, remove_empty, date,
                                    tile, method, add_wkt, calculate_best_threshold,
                                    verbose) {
-
   # Raster inputs can be either SpatRaster or character path
   check_object_class(predictions, c("SpatRaster", "character"))
   check_object_class(groundtruth, c("SpatRaster", "character"))

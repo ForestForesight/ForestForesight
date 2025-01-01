@@ -77,6 +77,9 @@ based on the size of the area and the length of the training period.}
 
 \item{validation}{Logical; Whether to add a validation matrix based on the training data,
 which is set at 0.25 of the training matrix. Should not be set if validation_dates is not NULL.}
+
+\item{groundtruth_pattern}{Character. pattern of the groundtruth dataset.
+Defaults to System environment variable DEFAULT_GROUNDTRUTH or if not present to groundtruth6m}
 }
 \value{
 A list containing:

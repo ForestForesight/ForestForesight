@@ -72,13 +72,14 @@ ff_train <- function(train_matrix,
                      xgb_model = NULL,
                      modelfilename = NULL,
                      objective = "binary:logistic") {
-
-  ff_train_input_check(train_matrix, validation_matrix, nrounds,
-                       eta, max_depth, subsample,
-                       eval_metric, early_stopping_rounds,
-                       gamma, maximize, min_child_weight,
-                       verbose, xgb_model, modelfilename,
-                       objective)
+  ff_train_input_check(
+    train_matrix, validation_matrix, nrounds,
+    eta, max_depth, subsample,
+    eval_metric, early_stopping_rounds,
+    gamma, maximize, min_child_weight,
+    verbose, xgb_model, modelfilename,
+    objective
+  )
   # Validate inputs
   validate_inputs(train_matrix)
 
@@ -245,9 +246,9 @@ ff_train_input_check <- function(train_matrix, validation_matrix, nrounds,
                                  verbose, xgb_model, modelfilename,
                                  objective) {
   # Check train_matrix can be either list or xgb.DMatrix
-  check_object_class(train_matrix, c("list","xgb.DMatrix"))
+  check_object_class(train_matrix, c("list", "xgb.DMatrix"))
   # Check validation_matrix same as train_matrix
-  check_object_class(validation_matrix, c("list","xgb.DMatrix"))
+  check_object_class(validation_matrix, c("list", "xgb.DMatrix"))
   check_object_class(nrounds, "numeric")
   check_object_class(eta, "numeric")
   check_object_class(max_depth, "numeric")
@@ -255,7 +256,7 @@ ff_train_input_check <- function(train_matrix, validation_matrix, nrounds,
   check_object_class(eval_metric, "character")
   check_object_class(early_stopping_rounds, "numeric")
   check_object_class(gamma, "numeric") ||
-  check_object_class(maximize, "logical")
+    check_object_class(maximize, "logical")
   check_object_class(min_child_weight, "numeric")
   check_object_class(verbose, "logical")
   check_object_class(xgb_model, c("xgb.Booster", "character"))

@@ -101,15 +101,17 @@ ff_run <- function(shape = NULL,
                    validation = FALSE,
                    groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH")) {
   fixed_sample_size <- 6e6
-  ff_run_input_check(shape, country, prediction_dates, ff_folder,
-                                 train_dates, validation_dates, model_save_path,
-                                 predictions_save_path, risk_zones_save_path,
-                                 pretrained_model_path, ff_prep_parameters,
-                                 ff_train_parameters, certainty_threshold,
-                                 filter_features, filter_conditions,
-                                 accuracy_output_path, importance_output_path,
-                                 verbose, autoscale_sample, validation,
-                                 groundtruth_pattern)
+  ff_run_input_check(
+    shape, country, prediction_dates, ff_folder,
+    train_dates, validation_dates, model_save_path,
+    predictions_save_path, risk_zones_save_path,
+    pretrained_model_path, ff_prep_parameters,
+    ff_train_parameters, certainty_threshold,
+    filter_features, filter_conditions,
+    accuracy_output_path, importance_output_path,
+    verbose, autoscale_sample, validation,
+    groundtruth_pattern
+  )
   corrected_date_input <- check_dates(
     train_dates, validation_dates,
     prediction_dates, validation, pretrained_model_path, groundtruth_pattern
@@ -710,11 +712,13 @@ analyze_predictions <- function(ff_folder, shape, tile, prediction, prediction_d
     analysis_polygons <- terra::intersect(
       terra::vect(get(data("degree_polygons", envir = environment()))), terra::aggregate(shape)
     )
-    polygons <- ff_analyze(if(has_value(certainty_threshold)){
-      prediction$predicted_raster > certainty_threshold
-      }else{
+    polygons <- ff_analyze(
+      if (has_value(certainty_threshold)) {
+        prediction$predicted_raster > certainty_threshold
+      } else {
         prediction$predicted_raster
-        },calculate_best_threshold = !has_value(certainty_threshold),
+      },
+      calculate_best_threshold = !has_value(certainty_threshold),
       groundtruth = prediction_input_data$groundtruth_raster,
       csv_filename = accuracy_output_path, tile = tile, date = prediction_date,
       append = TRUE, country = country,
@@ -1267,7 +1271,6 @@ ff_run_input_check <- function(shape, country, prediction_dates, ff_folder,
                                accuracy_output_path, importance_output_path,
                                verbose, autoscale_sample, validation,
                                groundtruth_pattern) {
-
   check_object_class(shape, "SpatVector")
   check_object_class(country, "character")
   check_object_class(prediction_dates, "character")

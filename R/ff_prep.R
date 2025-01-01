@@ -89,11 +89,12 @@ ff_prep <- function(datafolder = get_variable("FF_FOLDER"), country = get_variab
                     filter_conditions = NULL, sample_size = 0.3, validation_sample = 0,
                     add_date = TRUE, verbose = TRUE, shrink = "none", window = NA,
                     label_threshold = 1, add_xy = FALSE) {
-
-  ff_run_prep_check(datafolder, country, shape, tiles, groundtruth_pattern,
-                                dates, inc_features, exc_features, filter_features,
-                                filter_conditions, validation_sample, sample_size,
-                                add_date, verbose, shrink, window, label_threshold, add_xy)
+  ff_run_prep_check(
+    datafolder, country, shape, tiles, groundtruth_pattern,
+    dates, inc_features, exc_features, filter_features,
+    filter_conditions, validation_sample, sample_size,
+    add_date, verbose, shrink, window, label_threshold, add_xy
+  )
   ######## pre-conditions check########
   if (!has_value(groundtruth_pattern)) {
     ff_cat("no environment variable for DEFAULT_GROUNDTRUTH, reverting to groundtruth6m",
@@ -662,7 +663,6 @@ ff_run_prep_check <- function(datafolder, country, shape, tiles, groundtruth_pat
                               dates, inc_features, exc_features, filter_features,
                               filter_conditions, validation_sample, sample_size,
                               add_date, verbose, shrink, window, label_threshold, add_xy) {
-
   check_object_class(datafolder, "character")
   check_object_class(country, "character")
   check_object_class(shape, "SpatVector")

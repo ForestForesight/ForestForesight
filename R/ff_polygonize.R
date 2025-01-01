@@ -96,10 +96,12 @@ ff_polygonize <- function(input_raster,
                           max_polygons = NULL,
                           contain_polygons = NA) {
   # Validate inputs and load raster
-  ff_polygonize_input_check(input_raster, output_file, minimum_pixel_count,
-                                        threshold, window_size, smoothness, verbose,
-                                        calculate_max_count, max_polygons,
-                                        contain_polygons)
+  ff_polygonize_input_check(
+    input_raster, output_file, minimum_pixel_count,
+    threshold, window_size, smoothness, verbose,
+    calculate_max_count, max_polygons,
+    contain_polygons
+  )
   if (calculate_max_count && has_value(max_polygons)) {
     stop("Either let the algorithm calculate the maximum amount of polygons or give it yourself")
   }
@@ -442,7 +444,6 @@ ff_polygonize_input_check <- function(input_raster, output_file, minimum_pixel_c
                                       threshold, window_size, smoothness, verbose,
                                       calculate_max_count, max_polygons,
                                       contain_polygons) {
-
   check_object_class(input_raster, c("SpatRaster", "character"))
   check_object_class(output_file, "character")
   check_object_class(minimum_pixel_count, "numeric")

@@ -205,10 +205,10 @@ has_value <- function(x) {
 
   # Handle different types of single values
   if (is.na(x) || # Handles all NA types
-      identical(x, "") || # Empty string
-      identical(x, logical(0)) || # Empty logical
-      identical(x, list()) || # Empty list
-      identical(x, numeric(0))) { # Empty numeric
+    identical(x, "") || # Empty string
+    identical(x, logical(0)) || # Empty logical
+    identical(x, list()) || # Empty list
+    identical(x, numeric(0))) { # Empty numeric
     return(FALSE)
   }
 
@@ -421,23 +421,23 @@ get_config_dir <- function() {
 #'
 #' @return TRUE if object inherits from specified class(es), otherwise throws error
 #'
-check_object_class <- function(object, class, accept_empty = TRUE){
+check_object_class <- function(object, class, accept_empty = TRUE) {
   variable_name <- deparse(substitute(object))
   stopifnot(is.character(class))
   stopifnot(is.logical(accept_empty), length(accept_empty) == 1)
 
-  if(!has_value(object)){
-    if(accept_empty) {
+  if (!has_value(object)) {
+    if (accept_empty) {
       return(TRUE)
     } else {
       stop(sprintf("%s cannot be empty", variable_name))
     }
   }
 
-  if(!inherits(object, class)) {
+  if (!inherits(object, class)) {
     # Handle case when class is a vector of multiple acceptable classes
-    if(length(class) > 1) {
-      class_text <- paste(class, collapse=" or ")
+    if (length(class) > 1) {
+      class_text <- paste(class, collapse = " or ")
     } else {
       class_text <- class
     }
@@ -445,10 +445,11 @@ check_object_class <- function(object, class, accept_empty = TRUE){
     # Get actual class of object
     actual_class <- class(object)[1]
 
-    stop(sprintf("%s must be %s, but received object of class %s",
-                 variable_name, class_text, actual_class))
+    stop(sprintf(
+      "%s must be %s, but received object of class %s",
+      variable_name, class_text, actual_class
+    ))
   }
 
   return(TRUE)
 }
-

@@ -13,15 +13,15 @@ ff_accuracyreport(
 )
 }
 \arguments{
-\item{accuracy_data}{List of file paths or a single data frame containing accuracy metrics}
+\item{accuracy_data}{Vector of file paths or a single data frame or SpatVector containing accuracy metrics}
 
-\item{importance_data}{List of file paths or a single data frame containing importance metrics}
+\item{importance_data}{Vector of file paths or a single data frame containing importance metrics}
 
 \item{output_path}{Character string specifying the output file path (optional)}
 
 \item{title}{Character string for the plot title}
 
-\item{return_plot}{Logical indicating whether to return a plotting object (default: FALSE)}
+\item{new_window}{Logical indicating whether to show the plot in an x11 window (default: FALSE)}
 }
 \value{
 If return_plot is TRUE, returns a list containing the plot objects

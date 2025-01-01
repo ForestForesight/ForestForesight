@@ -7,13 +7,13 @@
 ff_importance(model, output_csv = NULL, name = NA, append = TRUE)
 }
 \arguments{
+\item{model}{xgb.model class object or Character string for Path to the .model file.}
+
 \item{output_csv}{Character string. Path to the output CSV file.}
 
 \item{name}{Character string. Name to be given to the model if the model is an xgb.model}
 
 \item{append}{Logical. If TRUE, append to existing CSV file. If FALSE, overwrite. Default is TRUE}
-
-\item{model_path}{xgb.model class object or Character string for Path to the .model file.}
 }
 \value{
 Invisibly returns the importance dataframe.
