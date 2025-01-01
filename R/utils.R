@@ -267,6 +267,7 @@ get_f_score <- function(gt, pred, threshold = 0.5, beta = 0.5, pr = FALSE) {
 
   # Calculate F-score
   f_score <- (1 + beta^2) * (precision * recall) / ((beta^2 * precision) + recall)
+
   if (!pr) {
     return(f_score)
   }
@@ -371,18 +372,20 @@ find_best_threshold <- function(prediction, groundtruth, optimize_function = get
 
   # Iteration loop
   for (i in 1:maxiter) {
-    if (f1 > f2) {
-      b <- x2
-      x2 <- x1
-      f2 <- f1
-      x1 <- b - inv_phi * (b - a)
-      f1 <- optimize_function(groundtruth, prediction, x1, beta)
-    } else {
-      a <- x1
-      x1 <- x2
-      f1 <- f2
-      x2 <- a + inv_phi * (b - a)
-      f2 <- optimize_function(groundtruth, prediction, x2, beta)
+    if (has_value(f1) && has_value(f2)) {
+      if (f1 > f2) {
+        b <- x2
+        x2 <- x1
+        f2 <- f1
+        x1 <- b - inv_phi * (b - a)
+        f1 <- optimize_function(groundtruth, prediction, x1, beta)
+      } else {
+        a <- x1
+        x1 <- x2
+        f1 <- f2
+        x2 <- a + inv_phi * (b - a)
+        f2 <- optimize_function(groundtruth, prediction, x2, beta)
+      }
     }
 
     # Check for convergence
