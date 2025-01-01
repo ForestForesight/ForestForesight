@@ -72,6 +72,14 @@ ff_train <- function(train_matrix,
                      xgb_model = NULL,
                      modelfilename = NULL,
                      objective = "binary:logistic") {
+  ff_train_input_check(
+    train_matrix, validation_matrix, nrounds,
+    eta, max_depth, subsample,
+    eval_metric, early_stopping_rounds,
+    gamma, maximize, min_child_weight,
+    verbose, xgb_model, modelfilename,
+    objective
+  )
   # Validate inputs
   validate_inputs(train_matrix)
 
@@ -210,4 +218,48 @@ validate_inputs <- function(train_matrix) {
     )
   }
   invisible(NULL)
+}
+
+
+#' Run input parameter checks for ff_train
+#'
+#' @param train_matrix Training data list or xgb.DMatrix
+#' @param validation_matrix Optional validation data
+#' @param nrounds Maximum boosting rounds
+#' @param eta Learning rate
+#' @param max_depth Tree depth
+#' @param subsample Instance subsample ratio
+#' @param eval_metric Evaluation metric
+#' @param early_stopping_rounds Early stopping threshold
+#' @param gamma Minimum loss reduction
+#' @param maximize Maximize metric flag
+#' @param min_child_weight Minimum child weight
+#' @param verbose Verbosity flag
+#' @param xgb_model Previous model
+#' @param modelfilename Save path
+#' @param objective Learning objective
+#' @noRd
+ff_train_input_check <- function(train_matrix, validation_matrix, nrounds,
+                                 eta, max_depth, subsample,
+                                 eval_metric, early_stopping_rounds,
+                                 gamma, maximize, min_child_weight,
+                                 verbose, xgb_model, modelfilename,
+                                 objective) {
+  # Check train_matrix can be either list or xgb.DMatrix
+  check_object_class(train_matrix, c("list", "xgb.DMatrix"))
+  # Check validation_matrix same as train_matrix
+  check_object_class(validation_matrix, c("list", "xgb.DMatrix"))
+  check_object_class(nrounds, "numeric")
+  check_object_class(eta, "numeric")
+  check_object_class(max_depth, "numeric")
+  check_object_class(subsample, "numeric")
+  check_object_class(eval_metric, "character")
+  check_object_class(early_stopping_rounds, "numeric")
+  check_object_class(gamma, "numeric") ||
+    check_object_class(maximize, "logical")
+  check_object_class(min_child_weight, "numeric")
+  check_object_class(verbose, "logical")
+  check_object_class(xgb_model, c("xgb.Booster", "character"))
+  check_object_class(modelfilename, "character")
+  check_object_class(objective, "character")
 }

@@ -267,6 +267,7 @@ get_f_score <- function(gt, pred, threshold = 0.5, beta = 0.5, pr = FALSE) {
 
   # Calculate F-score
   f_score <- (1 + beta^2) * (precision * recall) / ((beta^2 * precision) + recall)
+
   if (!pr) {
     return(f_score)
   }
@@ -371,18 +372,20 @@ find_best_threshold <- function(prediction, groundtruth, optimize_function = get
 
   # Iteration loop
   for (i in 1:maxiter) {
-    if (f1 > f2) {
-      b <- x2
-      x2 <- x1
-      f2 <- f1
-      x1 <- b - inv_phi * (b - a)
-      f1 <- optimize_function(groundtruth, prediction, x1, beta)
-    } else {
-      a <- x1
-      x1 <- x2
-      f1 <- f2
-      x2 <- a + inv_phi * (b - a)
-      f2 <- optimize_function(groundtruth, prediction, x2, beta)
+    if (has_value(f1) && has_value(f2)) {
+      if (f1 > f2) {
+        b <- x2
+        x2 <- x1
+        f2 <- f1
+        x1 <- b - inv_phi * (b - a)
+        f1 <- optimize_function(groundtruth, prediction, x1, beta)
+      } else {
+        a <- x1
+        x1 <- x2
+        f1 <- f2
+        x2 <- a + inv_phi * (b - a)
+        f2 <- optimize_function(groundtruth, prediction, x2, beta)
+      }
     }
 
     # Check for convergence
@@ -408,4 +411,48 @@ get_config_dir <- function() {
   }
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
   path
+}
+
+#' Check if object is of specified class
+#'
+#' @description Checks whether an object inherits from specified class(es) and gives informative error message if not.
+#'
+#' @param object Object to check
+#' @param class Character vector of one or more expected classes
+#' @param accept_empty Logical; if TRUE, empty/NULL objects pass check
+#' @param variable_name Character; name of variable for error message. Default extracts from input.
+#'
+#' @return TRUE if object inherits from specified class(es), otherwise throws error
+#'
+check_object_class <- function(object, class, accept_empty = TRUE) {
+  variable_name <- deparse(substitute(object))
+  stopifnot(is.character(class))
+  stopifnot(is.logical(accept_empty), length(accept_empty) == 1)
+
+  if (!has_value(object)) {
+    if (accept_empty) {
+      return(TRUE)
+    } else {
+      stop(sprintf("%s cannot be empty", variable_name))
+    }
+  }
+
+  if (!inherits(object, class)) {
+    # Handle case when class is a vector of multiple acceptable classes
+    if (length(class) > 1) {
+      class_text <- paste(class, collapse = " or ")
+    } else {
+      class_text <- class
+    }
+
+    # Get actual class of object
+    actual_class <- class(object)[1]
+
+    stop(sprintf(
+      "%s must be %s, but received object of class %s",
+      variable_name, class_text, actual_class
+    ))
+  }
+
+  return(TRUE)
 }

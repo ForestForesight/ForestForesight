@@ -10,7 +10,7 @@ test_that("ff_structurecheck handles folder structure correctly", {
   expect_error(ff_structurecheck(shape = shape, folder_path = test_dir, error_on_issue = TRUE), regexp = "some main folders are missing")
   dir.create(file.path(test_dir, "preprocessed"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(test_dir, "models"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(test_dir, "predictions"), recursive = TRUE)
+  dir.create(file.path(test_dir, "predictions"), recursive = TRUE, showWarnings = FALSE)
   expect_error(ff_structurecheck(shape = shape, folder_path = test_dir, error_on_issue = TRUE), regexp = "subfolder in preprocessed")
   dir.create(file.path(test_dir, "preprocessed", "input"), recursive = TRUE)
   dir.create(file.path(test_dir, "preprocessed", "groundtruth"), recursive = TRUE)
