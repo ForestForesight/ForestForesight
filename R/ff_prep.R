@@ -89,6 +89,12 @@ ff_prep <- function(datafolder = get_variable("FF_FOLDER"), country = get_variab
                     filter_conditions = NULL, sample_size = 0.3, validation_sample = 0,
                     add_date = TRUE, verbose = TRUE, shrink = "none", window = NA,
                     label_threshold = 1, add_xy = FALSE) {
+  ff_run_prep_check(
+    datafolder, country, shape, tiles, groundtruth_pattern,
+    dates, inc_features, exc_features, filter_features,
+    filter_conditions, validation_sample, sample_size,
+    add_date, verbose, shrink, window, label_threshold, add_xy
+  )
   ######## pre-conditions check########
   if (!has_value(groundtruth_pattern)) {
     ff_cat("no environment variable for DEFAULT_GROUNDTRUTH, reverting to groundtruth6m",
@@ -629,4 +635,50 @@ filter_by_feature <- function(filter_features, filter_conditions, matrix, verbos
     matrix <- matrix[spatial_indices, ]
   }
   return(list("filtered_matrix" = matrix, "filtered_indices" = spatial_indices))
+}
+
+
+#' Run input parameter checks for ff_prep
+#'
+#' @param datafolder Main data directory path
+#' @param country Country ISO3 code(s)
+#' @param shape Area of interest
+#' @param tiles Vector of tile identifiers
+#' @param groundtruth_pattern Pattern for ground truth files
+#' @param dates Vector of dates
+#' @param inc_features Features to include
+#' @param exc_features Features to exclude
+#' @param filter_features Filter features
+#' @param filter_conditions Filter conditions
+#' @param validation_sample Validation set fraction
+#' @param sample_size Sample size fraction
+#' @param add_date Add date features flag
+#' @param verbose Verbosity flag
+#' @param shrink Area modification option
+#' @param window Processing extent
+#' @param label_threshold Ground truth labeling threshold
+#' @param add_xy Add coordinates flag
+#' @noRd
+ff_run_prep_check <- function(datafolder, country, shape, tiles, groundtruth_pattern,
+                              dates, inc_features, exc_features, filter_features,
+                              filter_conditions, validation_sample, sample_size,
+                              add_date, verbose, shrink, window, label_threshold, add_xy) {
+  check_object_class(datafolder, "character")
+  check_object_class(country, "character")
+  check_object_class(shape, "SpatVector")
+  check_object_class(tiles, "character")
+  check_object_class(groundtruth_pattern, "character")
+  check_object_class(dates, "character")
+  check_object_class(inc_features, "character")
+  check_object_class(exc_features, "character")
+  check_object_class(filter_features, "character")
+  check_object_class(filter_conditions, "character")
+  check_object_class(validation_sample, "numeric")
+  check_object_class(sample_size, "numeric")
+  check_object_class(add_date, "logical")
+  check_object_class(verbose, "logical")
+  check_object_class(shrink, "character")
+  check_object_class(window, "numeric")
+  check_object_class(label_threshold, "numeric")
+  check_object_class(add_xy, "logical")
 }

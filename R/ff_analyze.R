@@ -31,6 +31,13 @@ ff_analyze <- function(predictions, groundtruth, forest_mask = get_variable("FOR
                        country = NULL, append = TRUE, analysis_polygons = NULL,
                        remove_empty = TRUE, date = NULL, tile = NULL, method = NA,
                        add_wkt = FALSE, calculate_best_threshold = FALSE, verbose = FALSE) {
+  ff_analyze_input_check(
+    predictions, groundtruth, forest_mask,
+    forest_mask_condition, csv_filename, country,
+    append, analysis_polygons, remove_empty, date,
+    tile, method, add_wkt, calculate_best_threshold,
+    verbose
+  )
   # Get date if not provided
   if (is.null(date)) {
     date <- get_date_from_files(predictions, groundtruth)
@@ -469,4 +476,48 @@ filter_raster_by_condition <- function(input_raster, filter_condition, verbose =
 
 
   return(input_raster)
+}
+
+#' Run input parameter checks for ff_analyze
+#'
+#' @param predictions Prediction raster
+#' @param groundtruth Ground truth raster
+#' @param forest_mask Optional forest mask raster
+#' @param forest_mask_condition Mask condition
+#' @param csv_filename CSV output path
+#' @param country Country ISO3 code
+#' @param append Append flag
+#' @param analysis_polygons Analysis areas
+#' @param remove_empty Empty records flag
+#' @param date Analysis date
+#' @param tile Tile identifier
+#' @param method Analysis method
+#' @param add_wkt WKT geometry flag
+#' @param calculate_best_threshold Threshold flag
+#' @param verbose Verbosity flag
+#' @noRd
+ff_analyze_input_check <- function(predictions, groundtruth, forest_mask,
+                                   forest_mask_condition, csv_filename, country,
+                                   append, analysis_polygons, remove_empty, date,
+                                   tile, method, add_wkt, calculate_best_threshold,
+                                   verbose) {
+  # Raster inputs can be either SpatRaster or character path
+  check_object_class(predictions, c("SpatRaster", "character"))
+  check_object_class(groundtruth, c("SpatRaster", "character"))
+  check_object_class(forest_mask, c("SpatRaster", "character"))
+
+  # Analysis polygons can be SpatVector or character path
+  check_object_class(analysis_polygons, c("SpatVector", "character"))
+
+  check_object_class(forest_mask_condition, "character")
+  check_object_class(csv_filename, "character")
+  check_object_class(country, "character")
+  check_object_class(append, "logical")
+  check_object_class(remove_empty, "logical")
+  check_object_class(date, "character")
+  check_object_class(tile, "character")
+  check_object_class(method, "character")
+  check_object_class(add_wkt, "logical")
+  check_object_class(calculate_best_threshold, "logical")
+  check_object_class(verbose, "logical")
 }

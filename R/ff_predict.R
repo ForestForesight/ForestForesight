@@ -45,6 +45,10 @@
 ff_predict <- function(model, test_matrix, thresholds = get_variable("DEFAULT_THRESHOLD"),
                        groundtruth = NA, indices = NA,
                        templateraster = NA, verbose = FALSE, certainty = FALSE) {
+  ff_run_predict_check(
+    model, test_matrix, thresholds, groundtruth,
+    indices, templateraster, verbose, certainty
+  )
   # Load and validate model
   loaded_model <- load_model(model)
 
@@ -105,7 +109,14 @@ remove_extra_features <- function(test_matrix, loaded_model) {
   if (has_value(loaded_model$feature_names)) {
     test_features <- colnames(test_matrix$features)
     extra_features <- setdiff(test_features, loaded_model$feature_names)
-
+    missing_features <- setdiff(loaded_model$feature_names, test_features)
+    if (length(missing_features) > 0) {
+      stop(paste(
+        "the following features are not present
+                 in your datafolder but are required in the model:",
+        paste(missing_features, collapse = ", ")
+      ))
+    }
     if (length(extra_features) > 0) {
       ff_cat(
         "Removing extra features from the test matrix:",
@@ -196,4 +207,34 @@ fill_raster <- function(templateraster, predictions, indices, certainty, thresho
   } else {
     return(NA)
   }
+}
+
+
+#' Run input parameter checks for ff_predict
+#'
+#' @param model XGBoost model object or path
+#' @param test_matrix Feature matrix list
+#' @param thresholds Classification thresholds
+#' @param groundtruth Actual values
+#' @param indices Raster indices
+#' @param templateraster Raster template
+#' @param verbose Verbosity flag
+#' @param certainty Return probabilities flag
+#' @return TRUE if all checks pass, otherwise stops with error
+#' @noRd
+ff_run_predict_check <- function(model, test_matrix, thresholds = 0.5,
+                                 groundtruth = NA, indices = NA, templateraster = NA,
+                                 verbose = FALSE, certainty = FALSE) {
+  # Model check - allow both object and path
+  check_object_class(model, c("character", "xgb.Booster"))
+  # Test matrix checks
+  check_object_class(test_matrix, "list")
+  # Threshold checks
+  check_object_class(thresholds, "numeric")
+  # Optional parameter checks
+  check_object_class(groundtruth, c("numeric", "SpatRaster"))
+  check_object_class(indices, "integer")
+  check_object_class(templateraster, "SpatRaster")
+  check_object_class(verbose, "logical")
+  check_object_class(certainty, "logical")
 }

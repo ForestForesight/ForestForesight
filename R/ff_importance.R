@@ -3,7 +3,7 @@
 #' This function loads a ForestForesight model (.model file) and its corresponding
 #' feature names (.rda file), extracts feature importance, and saves the results to a CSV file.
 #'
-#' @param model_path xgb.model class object or Character string for Path to the .model file.
+#' @param model xgb.model class object or Character string for Path to the .model file.
 #' @param output_csv Character string. Path to the output CSV file.
 #' @param name Character string. Name to be given to the model if the model is an xgb.model
 #' @param append Logical. If TRUE, append to existing CSV file. If FALSE, overwrite. Default is TRUE
@@ -29,6 +29,7 @@
 #'
 #' @export
 ff_importance <- function(model, output_csv = NULL, name = NA, append = TRUE) {
+  ff_importance_input_check(model, output_csv, name, append)
   if (!has_value(name)) {
     if (is.character(model)) {
       name <- sub("\\.model$", "", basename(model))
@@ -58,4 +59,19 @@ ff_importance <- function(model, output_csv = NULL, name = NA, append = TRUE) {
   }
   # Return dataframe invisibly
   invisible(importance_dataframe)
+}
+
+#' Run input parameter checks for ff_importance
+#'
+#' @param model_path Model object or path
+#' @param output_csv CSV output path
+#' @param name Model name
+#' @param append Append flag
+#' @noRd
+ff_importance_input_check <- function(model, output_csv, name, append) {
+  # Model can be either xgb.model or character path
+  check_object_class(model, c("xgb.Booster", "character"))
+  check_object_class(output_csv, "character")
+  check_object_class(name, "character")
+  check_object_class(append, "logical")
 }

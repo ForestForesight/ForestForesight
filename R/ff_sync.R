@@ -46,6 +46,13 @@ ff_sync <- function(ff_folder = get_variable("FF_FOLDER"),
                     groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH"),
                     bucket = "forestforesight-public", region = "eu-west-1",
                     verbose = TRUE) {
+  ff_sync_input_check(
+    ff_folder, identifier, features,
+    date_start, date_end, download_model,
+    download_data, download_groundtruth,
+    groundtruth_pattern, download_predictions,
+    bucket, region, verbose
+  )
   # Validate and process dates
   sync_dates <- sync_initialize_and_check(ff_folder, date_start, date_end, features)
   date_start <- sync_dates$date_start
@@ -412,4 +419,40 @@ sync_initialize_and_check <- function(ff_folder, date_start, date_end, features)
     date_end <- current_month
   }
   return(list(date_start = date_start, date_end = date_end))
+}
+
+#' Run input parameter checks for ff_sync
+#'
+#' @param ff_folder Local folder path
+#' @param identifier Tile ID or country code
+#' @param features Feature names or preset
+#' @param date_start Start date
+#' @param date_end End date
+#' @param download_model Model download flag
+#' @param download_data Data download flag
+#' @param download_groundtruth Ground truth download flag
+#' @param groundtruth_pattern Ground truth pattern
+#' @param download_predictions Predictions download flag
+#' @param bucket S3 bucket name
+#' @param region AWS region
+#' @param verbose Verbosity flag
+#' @noRd
+ff_sync_input_check <- function(ff_folder, identifier, features,
+                                date_start, date_end, download_model,
+                                download_data, download_groundtruth,
+                                groundtruth_pattern, download_predictions,
+                                bucket, region, verbose) {
+  check_object_class(ff_folder, "character")
+  check_object_class(identifier, c("character", "SpatVector"))
+  check_object_class(features, "character")
+  check_object_class(date_start, "character")
+  check_object_class(date_end, "character")
+  check_object_class(download_model, "logical")
+  check_object_class(download_data, "logical")
+  check_object_class(download_groundtruth, "logical")
+  check_object_class(groundtruth_pattern, "character")
+  check_object_class(download_predictions, "logical")
+  check_object_class(bucket, "character")
+  check_object_class(region, "character")
+  check_object_class(verbose, "logical")
 }

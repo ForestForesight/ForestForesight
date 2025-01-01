@@ -4,11 +4,11 @@
 #' Creates visualization plots for Forest Foresight model accuracy and feature importance analysis.
 #' Can handle both file paths and data frames as input.
 #'
-#' @param accuracy_data List of file paths or a single data frame containing accuracy metrics
-#' @param importance_data List of file paths or a single data frame containing importance metrics
+#' @param accuracy_data Vector of file paths or a single data frame or SpatVector containing accuracy metrics
+#' @param importance_data Vector of file paths or a single data frame containing importance metrics
 #' @param output_path Character string specifying the output file path (optional)
 #' @param title Character string for the plot title
-#' @param return_plot Logical indicating whether to return a plotting object (default: FALSE)
+#' @param new_window Logical indicating whether to show the plot in an x11 window (default: FALSE)
 #'
 #' @return If return_plot is TRUE, returns a list containing the plot objects
 #'
@@ -40,6 +40,10 @@ ff_accuracyreport <- function(accuracy_data = NULL,
                               output_path = NULL,
                               title = "Accuracy Analysis: Forest Foresight",
                               new_window = FALSE) {
+  ff_accuracyreport_input_check(
+    accuracy_data, importance_data,
+    output_path, title, new_window
+  )
   # Stop if no data is provided
   if (is.null(accuracy_data) && is.null(importance_data)) {
     ff_cat("No accuracy report created.
@@ -532,4 +536,25 @@ load_accuracy_data <- function(accuracy_data) {
   }
 
   return(results)
+}
+
+#' Run input parameter checks for ff_accuracyreport
+#'
+#' @param accuracy_data Accuracy metrics data
+#' @param importance_data Importance metrics data
+#' @param output_path Output file path
+#' @param title Plot title
+#' @param return_plot Return plot flag
+#' @noRd
+ff_accuracyreport_input_check <- function(accuracy_data, importance_data,
+                                          output_path, title, new_window) {
+  # Accuracy data can be character vector, data.frame, or SpatVector
+  check_object_class(accuracy_data, c("character", "data.frame", "SpatVector"))
+
+  # Importance data can be character vector or data.frame
+  check_object_class(importance_data, c("character", "data.frame"))
+
+  check_object_class(output_path, "character")
+  check_object_class(title, "character")
+  check_object_class(new_window, "logical")
 }
