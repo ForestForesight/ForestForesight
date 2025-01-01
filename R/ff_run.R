@@ -31,6 +31,8 @@
 #' based on the size of the area and the length of the training period.
 #' @param validation Logical; Whether to add a validation matrix based on the training data,
 #' which is set at 0.25 of the training matrix. Should not be set if validation_dates is not NULL.
+#' @param groundtruth_pattern Character. pattern of the groundtruth dataset.
+#' Defaults to System environment variable DEFAULT_GROUNDTRUTH or if not present to groundtruth6m
 #'
 #' @return A list containing:
 #'   \item{prediction_timeseries}{A SpatRaster object or RasterStack containing the predicted deforestation
@@ -99,7 +101,15 @@ ff_run <- function(shape = NULL,
                    validation = FALSE,
                    groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH")) {
   fixed_sample_size <- 6e6
-
+  ff_run_input_check(shape, country, prediction_dates, ff_folder,
+                                 train_dates, validation_dates, model_save_path,
+                                 predictions_save_path, risk_zones_save_path,
+                                 pretrained_model_path, ff_prep_parameters,
+                                 ff_train_parameters, certainty_threshold,
+                                 filter_features, filter_conditions,
+                                 accuracy_output_path, importance_output_path,
+                                 verbose, autoscale_sample, validation,
+                                 groundtruth_pattern)
   corrected_date_input <- check_dates(
     train_dates, validation_dates,
     prediction_dates, validation, pretrained_model_path, groundtruth_pattern
@@ -1222,4 +1232,61 @@ run_risk_zones <- function(prediction_raster, risk_zones_output_path = NULL, dat
   }
 
   return(result_list)
+}
+
+#' Run input parameter checks for ForestForesight
+#'
+#' @param shape SpatVector area of interest
+#' @param country Country ISO3 code
+#' @param prediction_dates Prediction dates
+#' @param ff_folder Input data directory
+#' @param train_dates Training dates
+#' @param validation_dates Validation dates
+#' @param model_save_path Model save path
+#' @param predictions_save_path Predictions save path
+#' @param risk_zones_save_path Risk zones save path
+#' @param pretrained_model_path Pretrained model path
+#' @param ff_prep_parameters Preprocessing parameters
+#' @param ff_train_parameters Training parameters
+#' @param certainty_threshold Classification threshold
+#' @param filter_features Filter features
+#' @param filter_conditions Filter conditions
+#' @param accuracy_output_path Accuracy metrics path
+#' @param importance_output_path Importance metrics path
+#' @param verbose Verbosity flag
+#' @param autoscale_sample Sample scaling flag
+#' @param validation Validation flag
+#' @param groundtruth_pattern Ground truth pattern
+#' @noRd
+ff_run_input_check <- function(shape, country, prediction_dates, ff_folder,
+                               train_dates, validation_dates, model_save_path,
+                               predictions_save_path, risk_zones_save_path,
+                               pretrained_model_path, ff_prep_parameters,
+                               ff_train_parameters, certainty_threshold,
+                               filter_features, filter_conditions,
+                               accuracy_output_path, importance_output_path,
+                               verbose, autoscale_sample, validation,
+                               groundtruth_pattern) {
+
+  check_object_class(shape, "SpatVector")
+  check_object_class(country, "character")
+  check_object_class(prediction_dates, "character")
+  check_object_class(ff_folder, "character")
+  check_object_class(train_dates, "character")
+  check_object_class(validation_dates, "character")
+  check_object_class(model_save_path, "character")
+  check_object_class(predictions_save_path, "character")
+  check_object_class(risk_zones_save_path, "character")
+  check_object_class(pretrained_model_path, c("xgb.Booster", "character"))
+  check_object_class(ff_prep_parameters, "list")
+  check_object_class(ff_train_parameters, "list")
+  check_object_class(certainty_threshold, "numeric")
+  check_object_class(filter_features, "character")
+  check_object_class(filter_conditions, "character")
+  check_object_class(accuracy_output_path, "character")
+  check_object_class(importance_output_path, "character")
+  check_object_class(verbose, "logical")
+  check_object_class(autoscale_sample, "logical")
+  check_object_class(validation, "logical")
+  check_object_class(groundtruth_pattern, "character")
 }

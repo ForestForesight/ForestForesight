@@ -96,6 +96,10 @@ ff_polygonize <- function(input_raster,
                           max_polygons = NULL,
                           contain_polygons = NA) {
   # Validate inputs and load raster
+  ff_polygonize_input_check(input_raster, output_file, minimum_pixel_count,
+                                        threshold, window_size, smoothness, verbose,
+                                        calculate_max_count, max_polygons,
+                                        contain_polygons)
   if (calculate_max_count && has_value(max_polygons)) {
     stop("Either let the algorithm calculate the maximum amount of polygons or give it yourself")
   }
@@ -418,4 +422,35 @@ add_polygon_attributes <- function(polygons, input_raster, threshold) {
   polygons$threshold <- threshold
   polygons$date <- as.character(as.Date(Sys.time()))
   return(polygons)
+}
+
+
+#' Run input parameter checks for ff_polygonize
+#'
+#' @param input_raster Input raster
+#' @param output_file Output file path
+#' @param minimum_pixel_count Minimum pixel count
+#' @param threshold Classification threshold
+#' @param window_size Focal window size
+#' @param smoothness Smoothness parameter
+#' @param verbose Verbosity flag
+#' @param calculate_max_count Auto-scale flag
+#' @param max_polygons Maximum polygon count
+#' @param contain_polygons Boundary polygon
+#' @noRd
+ff_polygonize_input_check <- function(input_raster, output_file, minimum_pixel_count,
+                                      threshold, window_size, smoothness, verbose,
+                                      calculate_max_count, max_polygons,
+                                      contain_polygons) {
+
+  check_object_class(input_raster, c("SpatRaster", "character"))
+  check_object_class(output_file, "character")
+  check_object_class(minimum_pixel_count, "numeric")
+  check_object_class(threshold, c("numeric", "character"))
+  check_object_class(window_size, "numeric")
+  check_object_class(smoothness, "numeric")
+  check_object_class(verbose, "logical")
+  check_object_class(calculate_max_count, "logical")
+  check_object_class(max_polygons, "numeric")
+  check_object_class(contain_polygons, "SpatVector")
 }
