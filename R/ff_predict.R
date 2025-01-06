@@ -75,12 +75,12 @@ ff_predict <- function(model, test_matrix, thresholds = get_variable("DEFAULT_TH
   }
 
   if (has_value(metrics$accuracy_f05)) {
-    for(result in seq_along(metrics$accuracy_f05)){
-      ff_cat("threshold:",thresholds[result],
-             "F0.5:", metrics$accuracy_f05[result],
-             "precision:", metrics$precision[result],
-             "recall:", metrics$recall[result],
-             verbose = verbose
+    for (result in seq_along(metrics$accuracy_f05)) {
+      ff_cat("threshold:", thresholds[result],
+        "F0.5:", metrics$accuracy_f05[result],
+        "precision:", metrics$precision[result],
+        "recall:", metrics$recall[result],
+        verbose = verbose
       )
     }
   }
