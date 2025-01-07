@@ -1,7 +1,7 @@
 Package: ForestForesight
 Type: Package
 Title: Package created to preprocess, model, predict and analyze deforestation according to the WWF-NL ForestForesight principles.
-Version: 4.2.3
+Version: 4.2.4
 Date: 2025-01-07
 Authors@R: 
   c(person(given = "Jonas", 
