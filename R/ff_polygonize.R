@@ -277,7 +277,7 @@ determine_threshold <- function(threshold, smoothed_raster, raster_stats, verbos
     )
   )
 
-  ff_cat("automatically determined threshold is",
+  ff_cat("automatically determined threshold for",threshold,"risk level is",
     round(final_threshold, 4),
     verbose = verbose
   )
