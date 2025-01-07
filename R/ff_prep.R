@@ -213,7 +213,7 @@ get_tiles_and_shape <- function(country, shape, tiles_vector, tiles, verbose) {
     if (!terra::is.lonlat(shape)) {
       shape <- terra::project(shape, "epsg:4326")
     }
-    tiles <- tiles_vector[shape]$tile_id
+    tiles <- terra::intersect(terra::aggregate(shape),tiles_vector)$tile_id
     ff_cat("Selecting based on shape\nProcessing tiles:", paste(tiles, collapse = ", "), verbose = verbose)
   } else if (has_value(country)) {
     ff_cat("Selecting based on country", verbose = verbose)

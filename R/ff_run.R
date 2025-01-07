@@ -386,7 +386,8 @@ check_folder_and_input <- function(ff_folder, country, shape, train_dates, predi
     stop(paste(ff_folder, "does not exist as a main ff_folder"))
   }
 
-  tiles <- terra::vect(get(data("gfw_tiles", envir = environment())))[shape, ]$tile_id
+  tiles <- terra::intersect(terra::aggregate(shape),
+                            terra::vect(get(data("gfw_tiles", envir = environment()))))$tile_id
   ff_structurecheck(
     shape = shape, folder_path = ff_folder,
     check_date = if (has_value(train_dates)) {
