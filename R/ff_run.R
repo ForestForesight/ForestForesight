@@ -154,9 +154,19 @@ ff_run <- function(shape = NULL,
     risk_zones_save_path,
     dates = prediction_dates, verbose = verbose
   )
-  ff_accuracyreport(
-    accuracy_data = prediction_data$accuracy_polygons,
-    importance_data = importance_dataframe, output_path = accuracy_report_path
+  tryCatch(
+    {
+      ff_accuracyreport(
+        accuracy_data = prediction_data$accuracy_polygons,
+        importance_data = importance_dataframe,
+        output_path = accuracy_report_path,
+        new_window = FALSE
+      )
+    },
+    error = function(e) {
+      ff_cat("Error plotting accuracy report - this may be due to incorrect plot window dimensions:", log_level = "error")
+      ff_cat(paste("Original error:", e$message), type = "error")
+    }
   )
   return(list(
     predictions = prediction_data$predictions,
