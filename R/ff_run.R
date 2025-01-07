@@ -160,7 +160,7 @@ ff_run <- function(shape = NULL,
         accuracy_data = prediction_data$accuracy_polygons,
         importance_data = importance_dataframe,
         output_path = accuracy_report_path,
-        new_window = TRUE
+        new_window = FALSE
       )
     },
     error = function(e) {
