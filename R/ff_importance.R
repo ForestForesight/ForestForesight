@@ -33,10 +33,10 @@ ff_importance <- function(model, output_csv = NULL, name = NA, append = TRUE) {
   if (!has_value(name)) {
     if (is.character(model)) {
       name <- sub("\\.model$", "", basename(model))
-    if(!has_value(name)){
-      name <- NA
-    }
-      } else {
+      if (!has_value(name)) {
+        name <- NA
+      }
+    } else {
       name <- NA
     }
   }
