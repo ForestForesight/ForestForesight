@@ -113,7 +113,7 @@ ff_environment <- function(config_file_path = "") {
 
   cat(sprintf("\nConfiguration saved to: %s\n", config_path))
   cat("You can modify these settings anytime by editing this file.\n")
-
+  config_load()
   invisible(TRUE)
 }
 
