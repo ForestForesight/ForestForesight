@@ -116,7 +116,7 @@ check_file_naming <- function(files, tile, subfolder, silent_on_pass) {
     }
     stop("please fix issues above and try again")
   } else {
-    print_result(paste("Correct file naming in", subfolder, "for tile", tile, "\n"),
+    print_result(paste("Correct file naming in", subfolder, "for tile", tile),
       color = "green",
       silent_on_pass = silent_on_pass
     )
@@ -166,7 +166,7 @@ check_groundtruth <- function(files, tile, check_date, silent_on_pass, groundtru
   if (!has_groundtruth) {
     print_result(paste(
       "No", groundtruth_pattern, "file for check date", check_date,
-      "in groundtruth for tile", tile, "\n"
+      "in groundtruth for tile", tile
     ), color = "yellow")
   } else {
     print_result(
@@ -218,7 +218,6 @@ check_tile_subfolders <- function(folder, info, subfolder, check_date,
         groundtruth_pattern = groundtruth_pattern
       )
     }
-    cat("\n")
   }
 }
 
