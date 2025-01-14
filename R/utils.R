@@ -456,3 +456,31 @@ check_object_class <- function(object, class, accept_empty = TRUE) {
 
   return(TRUE)
 }
+
+
+#' Save trained model to file
+#' @param model Trained XGBoost model
+#' @param filename Output filename
+#' @param verbose Whether to print progress messages
+save_model <- function(model, filename, verbose = FALSE) {
+  ff_cat("Saving model to", filename, verbose = verbose)
+
+  feature_names <- model$feature_names
+  rda_filename <- gsub("\\.model$", ".rda", filename)
+
+  tryCatch(
+    {
+      suppressWarnings({
+        saved <- xgboost::xgb.save(model, filename)
+        if (saved) {
+          save(feature_names, file = rda_filename)
+        } else {
+          ff_cat("Warning: Failed to save model", color = "yellow")
+        }
+      })
+    },
+    error = function(e) {
+      ff_cat("Error saving model:", e$message, color = "red")
+    }
+  )
+}
