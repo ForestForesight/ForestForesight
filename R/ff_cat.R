@@ -38,6 +38,9 @@ ff_cat <- function(...,
                    log_file = NULL,
                    timestamp = get_variable("TIMESTAMP"),
                    auto_newline = TRUE) {
+  args <- list(...)
+  # Return if args list is empty
+  if (!has_value(args[[1]])) return(invisible(NULL))
   if (!has_value(timestamp)) {
     timestamp <- TRUE
   }
@@ -62,6 +65,7 @@ ff_cat <- function(...,
     setup_logging(log_file)
   }
   # Format the text
+
   text <- format_text(..., sep = sep, auto_newline = auto_newline)
 
   # Handle console output and logging
