@@ -40,7 +40,9 @@ ff_cat <- function(...,
                    auto_newline = TRUE) {
   args <- list(...)
   # Return if args list is empty
-  if (!has_value(args[[1]])) return(invisible(NULL))
+  if (!has_value(args[[1]])) {
+    return(invisible(NULL))
+  }
   if (!has_value(timestamp)) {
     timestamp <- TRUE
   }
