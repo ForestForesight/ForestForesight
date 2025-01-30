@@ -1,6 +1,6 @@
 test_that("ff_predict functions as expected", {
-  data <- ff_prep(datafolder = file.path(getwd(), "../test_data/"), country = "BRN", dates = "2023-01-01", sample_size = 1)
-  model <- file.path("../test_data/models/South-Eastern Asia 1/South-Eastern Asia 1.model")
+  data <- ff_prep(datafolder = file.path(getwd(), "tests/test_data/"), country = "BRN", dates = "2023-01-01", sample_size = 1)
+  model <- file.path("tests/test_data/models/South-Eastern Asia 1/South-Eastern Asia 1.model")
   result <- ff_predict(
     model = model, test_matrix = data$feature_dataset,
     groundtruth = data$feature_dataset$label,

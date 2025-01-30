@@ -1,8 +1,8 @@
 test_that("tests to see if ff_analyze works", {
   test_dir <- tempdir()
-  groundtruth <- file.path("../test_data/preprocessed/groundtruth/10N_110E/10N_110E_2023-01-01_groundtruth6m.tif")
-  forestmask <- file.path("../test_data/preprocessed/input/10N_110E/10N_110E_2021-01-01_initialforestcover.tif")
-  predictions <- file.path("../test_data/predictions/BRN/BRN_2023-01-01.tif")
+  groundtruth <- file.path("tests/test_data/preprocessed/groundtruth/10N_110E/10N_110E_2023-01-01_groundtruth6m.tif")
+  forestmask <- file.path("tests/test_data/preprocessed/input/10N_110E/10N_110E_2021-01-01_initialforestcover.tif")
+  predictions <- file.path("tests/test_data/predictions/BRN/BRN_2023-01-01.tif")
   testthat::expect_no_error(polygons <- ff_analyze(predictions = predictions, groundtruth = groundtruth, forest_mask = forestmask, remove_empty = FALSE))
   predictions <- terra::rast(predictions)
   testthat::expect_no_error(polygons <- ff_analyze(

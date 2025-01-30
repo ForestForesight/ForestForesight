@@ -1,7 +1,7 @@
 test_that("ff_accuracyreport handles different input types correctly", {
   # Setup test data
   test_dir <- tempdir()
-  datadir <- file.path(getwd(), "../test_data/")
+  datadir <- file.path(getwd(), "tests/test_data/")
   # Run ff_run to get test data
   accuracy_file <- file.path(test_dir, "accuracy.csv")
   importance_file <- file.path(test_dir, "importance.csv")

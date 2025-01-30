@@ -1,6 +1,6 @@
 test_that("ff_polygonize handles basic functionality", {
   # Setup test data
-  test_raster <- terra::rast("../test_data/predictions/BRN/BRN_2023-01-01.tif")
+  test_raster <- terra::rast("tests/test_data/predictions/BRN/BRN_2023-01-01.tif")
 
   # Test 1: Basic functionality with default parameters
   result <- ff_polygonize(test_raster)
