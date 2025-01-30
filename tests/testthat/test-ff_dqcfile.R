@@ -1,6 +1,6 @@
 test_that("ff_dqc_file processes raster file correctly", {
   # Test 1: Basic functionality and return structure
-  test_file <- "tests/test_data/preprocessed/input/10N_110E/10N_110E_2023-01-01_lastsixmonths.tif"
+  test_file <- "../test_data/preprocessed/input/10N_110E/10N_110E_2023-01-01_lastsixmonths.tif"
   result <- ff_dqc_file(test_file)
 
   # Check that the function returns a list with exactly 11 elements

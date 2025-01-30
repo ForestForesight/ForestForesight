@@ -32,8 +32,8 @@ test_that("get_info fails with invalid input type", {
 })
 
 test_that("feature detection works with valid directory", {
-  skip_if_not(dir.exists("tests/test_data/"))
-  result <- get_info("BRN", ff_dir = "tests/test_data/", verbose = FALSE)
+  skip_if_not(dir.exists("../test_data/"))
+  result <- get_info("BRN", ff_dir = "../test_data/", verbose = FALSE)
   expect_type(result$available_features, "character")
 })
 

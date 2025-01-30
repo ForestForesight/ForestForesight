@@ -2,7 +2,7 @@ test_that("check that ff_run can handle all the things", {
   test_dir <- tempdir()
   tiffile <- file.path(test_dir, "result.tif")
   tiffile2 <- file.path(test_dir, "result2.tif")
-  datadir <- file.path(getwd(), "tests/test_data/")
+  datadir <- file.path(getwd(), "../test_data/")
   modelfile <- file.path(test_dir, "model.model")
   testthat::expect_no_error(
     result1 <- ff_run(
@@ -31,7 +31,7 @@ test_that("check that ff_run can handle all the things", {
 test_that("ff_run handles various input combinations and edge cases", {
   # Setup
   test_dir <- tempdir()
-  datadir <- file.path(getwd(), "tests/test_data/")
+  datadir <- file.path(getwd(), "../test_data/")
   tiffile <- file.path(test_dir, "result.tif")
   modelfile <- file.path(test_dir, "model.model")
 

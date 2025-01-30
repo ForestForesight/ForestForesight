@@ -1,6 +1,6 @@
 test_that("ff_dqc processes folder of raster files correctly", {
   # Test 1: Basic functionality and return structure
-  test_folder <- "tests/test_data/preprocessed/input/10N_110E/"
+  test_folder <- "../test_data/preprocessed/input/10N_110E/"
   result <- ff_dqc(test_folder)
 
   # Check that the function returns a list with exactly 7 elements
@@ -38,7 +38,7 @@ test_that("ff_dqc processes folder of raster files correctly", {
 
 test_that("ff_dqc handles edge cases correctly", {
   # Test 4: Test with return_values = FALSE
-  test_folder <- "tests/test_data/preprocessed/input/10N_110E/"
+  test_folder <- "../test_data/preprocessed/input/10N_110E/"
   result <- ff_dqc(test_folder, return_values = FALSE)
   testthat::expect_true(all(is.na(result$byfeature$mean_value)))
   testthat::expect_true(all(is.na(result$byfeature$max_value)))
@@ -47,7 +47,7 @@ test_that("ff_dqc handles edge cases correctly", {
 
 test_that("ff_dqc validates date formats correctly", {
   # Test 5: Check date format validation
-  test_folder <- "tests/test_data/preprocessed/input/10N_110E/"
+  test_folder <- "../test_data/preprocessed/input/10N_110E/"
   result <- ff_dqc(test_folder)
 
   # Check date format in all rows

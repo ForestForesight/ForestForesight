@@ -1,6 +1,6 @@
 test_that("tests for ff_train", {
   test_dir <- tempdir()
-  input_data <- ff_prep("tests/test_data/", country = Sys.getenv("TEST_COUNTRY"), dates = "2023-01-01", sample_size = 0.1, validation_sample = 0.02, inc_features = c("initialforestcover", "timesinceloss"), verbose = F)
+  input_data <- ff_prep("../test_data/", country = Sys.getenv("TEST_COUNTRY"), dates = "2023-01-01", sample_size = 0.1, validation_sample = 0.02, inc_features = c("initialforestcover", "timesinceloss"), verbose = F)
   testthat::expect_no_error(ff_train(train_matrix = input_data$feature_dataset, nrounds = 10, verbose = T))
   testthat::expect_no_error(ff_train(input_data$feature_dataset, nrounds = 15, eta = 0.3, max_depth = 7, early_stopping_rounds = 3, verbose = T))
   testthat::expect_no_error(ff_train(input_data$feature_dataset, nrounds = 10, validation_matrix = input_data$validation_matrix, modelfilename = file.path(test_dir, "model.model")))
