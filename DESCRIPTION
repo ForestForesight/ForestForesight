@@ -1,8 +1,8 @@
 Package: ForestForesight
 Type: Package
 Title: Package created to preprocess, model, predict and analyze deforestation according to the WWF-NL ForestForesight principles.
-Version: 4.2.4
-Date: 2025-01-07
+Version: 4.3.0
+Date: 2025-04-17
 Authors@R: 
   c(person(given = "Jonas", 
            family = "van Duijvenbode", 
@@ -32,7 +32,7 @@ License: GPL-3 + COPYING file
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
-Depends: terra, sf, xgboost, httr, lubridate, smoothr, crayon, aws.s3, logging
+Depends: terra, sf, xgboost, httr, lubridate, smoothr, crayon, AzureStor, logging
 Suggests:testthat, devtools, lintr, styler, conflicted
 Imports: 
     digest,
