@@ -178,34 +178,6 @@ train_model <- function(params, train_dataset, xgb_model = xgb_model, ...) {
   )
 }
 
-#' Save trained model to file
-#' @param model Trained XGBoost model
-#' @param filename Output filename
-#' @param verbose Whether to print progress messages
-#' @noRd
-save_model <- function(model, filename, verbose = FALSE) {
-  ff_cat("Saving model to", filename, verbose = verbose)
-
-  feature_names <- model$feature_names
-  rda_filename <- gsub("\\.model$", ".rda", filename)
-
-  tryCatch(
-    {
-      suppressWarnings({
-        saved <- xgboost::xgb.save(model, filename)
-        if (saved) {
-          save(feature_names, file = rda_filename)
-        } else {
-          ff_cat("Warning: Failed to save model", color = "yellow")
-        }
-      })
-    },
-    error = function(e) {
-      ff_cat("Error saving model:", e$message, color = "red")
-    }
-  )
-}
-
 #' Validate input data
 #' @param train_matrix Training data
 #' @return NULL invisibly
