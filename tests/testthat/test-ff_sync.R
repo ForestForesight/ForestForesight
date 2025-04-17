@@ -1,6 +1,6 @@
 library(testthat)
 library(terra)
-library(aws.s3)
+library(AzureStor)
 
 test_that("ff_sync handles basic tile downloads", {
   # Setup test directory

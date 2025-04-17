@@ -1,6 +1,6 @@
-#' Sync ForestForesight Data from S3
+#' Sync ForestForesight Data from Azure Blob Storage
 #'
-#' This function synchronizes ForestForesight data from a public S3 bucket to a local folder.
+#' This function synchronizes ForestForesight data from an Azure blob storage container to a local folder.
 #' It can sync data for a specific tile or an entire country, including input data, ground truth data,
 #' and optionally model data.
 #'
@@ -21,11 +21,13 @@
 #' or groundtruth12m for one, three or twelve months respectively
 #' @param download_predictions Logical. Whether to download the prediction data.
 #' Only works when downloading for entire countries. Default is FALSE.
-#' @param bucket Character. Name of the S3 bucket. Default is "forestforesight-public".
-#' @param region Character. AWS region of the bucket. Default is "eu-west-1".
+#' @param download_risk_areas Logical. Whether to download the prediction data as geopackage risk areas.
+#' Only works when downloading for entire countries. Default is FALSE.
+#' @param container_name Character. Name of the Azure container. Default is "forestforesight-data".
+#' @param storage_account Character. Name of the Azure storage account. Default is "forestforesight".
 #' @param verbose Logical. Whether the function should be verbose.
 #'
-#' @import aws.s3
+#' @import AzureStor
 #' @import terra
 #'
 #' @return Invisible NULL. The function is called for its side effects.
@@ -42,27 +44,29 @@ ff_sync <- function(ff_folder = get_variable("FF_FOLDER"),
                     identifier = get_variable("DEFAULT_COUNTRY"), features = "Everything",
                     date_start = NULL, date_end = NULL,
                     download_model = FALSE, download_data = TRUE,
-                    download_predictions = FALSE, download_groundtruth = TRUE,
+                    download_predictions = FALSE, download_risk_areas = FALSE, download_groundtruth = TRUE,
                     groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH"),
-                    bucket = "forestforesight-public", region = "eu-west-1",
+                    container_name = "forestforesight-data", storage_account = "forestforesight",
                     verbose = TRUE) {
   ff_sync_input_check(
     ff_folder, identifier, features,
     date_start, date_end, download_model,
     download_data, download_groundtruth,
-    groundtruth_pattern, download_predictions,
-    bucket, region, verbose
+    groundtruth_pattern, download_predictions,download_risk_areas,
+    container_name, storage_account, verbose
   )
   # Validate and process dates
   sync_dates <- sync_initialize_and_check(ff_folder, date_start, date_end, features)
   date_start <- sync_dates$date_start
   date_end <- sync_dates$date_end
 
+  # Create Azure endpoint for anonymous access
+  endpoint <- storage_endpoint(paste0("https://", storage_account, ".blob.core.windows.net"),
+                               sas = NULL,  # Anonymous access
+                               key = NULL)
 
-  # Process features parameter
-
-
-  # Create ff_folder if it doesn't exist
+  # Connect to the container
+  container <- storage_container(endpoint, container_name)
 
   # Determine if identifier is a tile, country code, or SpatVector
   identifier_lookup <- get_tiles_and_country_codes(identifier)
@@ -74,107 +78,70 @@ ff_sync <- function(ff_folder = get_variable("FF_FOLDER"),
   if (!is.null(date_start) && !is.null(date_end)) {
     dates_to_check <- daterange(date_start, date_end)
   }
+
   # Download model if requested
   if (download_model) {
-    model_downloader(ff_folder, country_codes, bucket, region, verbose)
+    model_downloader_azure(ff_folder, country_codes, container, verbose)
   }
+
   feature_list <- ff_sync_get_features(features = features, ff_folder = ff_folder)
+
   # Sync input and ground truth data for each tile
   if (download_data || download_groundtruth) {
     ff_cat("Downloading input and ground truth data", verbose = verbose)
     for (tile in tiles) {
       # Handle input data
       if (download_data) {
-        data_downloader(
+        data_downloader_azure(
           ff_folder = ff_folder, tile = tile, feature_list = feature_list,
-          dates_to_check = dates_to_check, bucket = bucket, region = region, verbose = verbose
+          dates_to_check = dates_to_check, container = container, verbose = verbose
         )
       }
 
-      # Handle ground truth data (unchanged)
+      # Handle ground truth data
       if (download_groundtruth) {
-        groundtruth_downloader(
-          ff_folder = ff_folder, tile = tile, dates_to_check =
-            dates_to_check, bucket = bucket, region = region, verbose = verbose,
+        groundtruth_downloader_azure(
+          ff_folder = ff_folder, tile = tile, dates_to_check = dates_to_check,
+          container = container, verbose = verbose,
           groundtruth_pattern = groundtruth_pattern
         )
       }
     }
   }
 
-
-
   # Download predictions if requested
   if (download_predictions) {
-    prediction_downloader(
+    prediction_downloader_azure(
       ff_folder = ff_folder, country_codes = country_codes,
-      dates_to_check = dates_to_check, bucket = bucket, region = region,
+      dates_to_check = dates_to_check, container = container,
+      verbose = verbose
+    )
+  }
+  if (download_risk_areas) {
+    risk_areas_downloader_azure(
+      ff_folder = ff_folder, country_codes = country_codes,
+      dates_to_check = dates_to_check, container = container,
       verbose = verbose
     )
   }
 
   invisible(NULL)
 }
-ff_sync_get_features <- function(features, ff_folder) {
-  feature_list <- NULL
-  if (is.character(features)) {
-    features <- tolower(features)
-    if (length(features) == 1) {
-      if (features == "small model") {
-        # Find and load small model RDA files
-        model_files <- list.files(file.path(ff_folder, "models"),
-          pattern = "small\\.rda$",
-          recursive = TRUE,
-          full.names = TRUE
-        )
-        if (length(model_files) == 0) {
-          stop("no models were found. Either change download_model to TRUE or choose another option for features")
-        }
-        feature_list <- unique(unlist(lapply(model_files, function(f) {
-          get(load(f))
-        })))
-      } else if (features %in% c("highest", "high", "medium", "low", "everything")) {
-        # Load feature metadata
-        feature_metadata <- get(data("feature_metadata", envir = environment()))
-        importance_levels <- switch(features,
-          "highest" = c("Highest"),
-          "high" = c("Highest", "High"),
-          "medium" = c("Highest", "High", "Medium"),
-          "low" = c("Highest", "High", "Medium", "Low"),
-          "everything" = unique(feature_metadata$importance)
-        )
-        feature_list <- feature_metadata$name[feature_metadata$importance %in% importance_levels]
-      } else {
-        return(features)
-      }
-    } else {
-      # Vector of feature names provided
-      feature_metadata <- get("feature_metadata")
-      if (!all(features %in% feature_metadata$name)) {
-        missing_features <- features[!features %in% feature_metadata$name]
-        stop(
-          "The following features are not valid: ",
-          paste(missing_features, collapse = ", "),
-          "available features are:", paste(feature_metadata$name, collapse = "\n")
-        )
-      }
-      feature_list <- features
-    }
-  }
-  if (!"initialforestcover" %in% feature_list) {
-    feature_list <- c(feature_list, "initialforestcover")
-  }
-  return(feature_list)
-}
 
-groundtruth_downloader <- function(ff_folder, tile, dates_to_check, bucket, region, verbose, groundtruth_pattern) {
+# Helper function to download groundtruth data from Azure
+groundtruth_downloader_azure <- function(ff_folder, tile, dates_to_check, container, verbose, groundtruth_pattern) {
   groundtruth_folder <- file.path(ff_folder, "preprocessed", "groundtruth", tile)
   dir.create(groundtruth_folder, recursive = TRUE, showWarnings = FALSE)
-  prefix <- paste0("preprocessed/groundtruth/", tile)
-  s3_files <- aws.s3::get_bucket(bucket, prefix = prefix, region = region, max = Inf)
 
+  prefix <- paste0("preprocessed/groundtruth/", tile)
+
+  # List blobs with the prefix
+  blob_list <- list_blobs(container, prefix = prefix)
+
+  # Filter blobs by pattern
   groundtruth_pattern <- paste0("_", groundtruth_pattern, "\\.tif$")
-  matching_files <- grep(groundtruth_pattern, sapply(s3_files, function(x) x$Key), value = TRUE)
+  matching_files <- grep(groundtruth_pattern, blob_list$name, value = TRUE)
+
   if (!is.null(dates_to_check)) {
     # Filter by dates
     date_matches <- sapply(matching_files, function(f) {
@@ -185,89 +152,58 @@ groundtruth_downloader <- function(ff_folder, tile, dates_to_check, bucket, regi
     if (any(date_matches)) {
       matching_files <- matching_files[date_matches]
     } else {
-      ff_cat("no predictions found in daterange, downloading latest available")
+      ff_cat("no groundtruth found in daterange, downloading latest available", verbose = verbose)
       # If no files within date range, get the latest available
       matching_files <- select_files_date(given_date = min(dates_to_check), listed_files = matching_files)
     }
   }
 
-  # Sync matched files
+  # Download matched files
   for (file in matching_files) {
-    if (!file.exists(file.path(ff_folder, file))) {
+    local_path <- file.path(ff_folder, file)
+    if (!file.exists(local_path)) {
       ff_cat(file, verbose = verbose)
-      aws.s3::save_object(file,
-        bucket = bucket, region = region,
-        file = file.path(ff_folder, file), verbose = FALSE
-      )
+      storage_download(container, file, local_path, overwrite = FALSE)
     }
   }
 }
 
-get_tiles_and_country_codes <- function(identifier) {
-  countries <- terra::vect(get(data("countries", envir = environment())))
-  gfw_tiles <- terra::vect(get(data("gfw_tiles", envir = environment())))
-  # test if identifier is a tile
-  if (is.character(identifier) && nchar(identifier) == 8 && grepl("^[0-9]{2}[NS]_[0-9]{3}[EW]$", identifier)) {
-    tiles <- identifier
-    identifier <- gfw_tiles[gfw_tiles$tile_id == identifier]
-  }
-  # if the identifier is a spatvector, do this
-  if (inherits(identifier, "SpatVector")) {
-    check_spatvector(identifier, check_size = FALSE)
-    identifier <- terra::buffer(identifier, width = -1)
-
-    # Intersect the provided SpatVector with countries to get ISO3 codes
-    intersected <- terra::intersect(identifier, countries)
-    country_codes <- unique(intersected$iso3)
-
-    # Get tiles that intersect with the provided SpatVector
-    if (!exists("tiles")) {
-      tiles <- terra::intersect(gfw_tiles, identifier)
-      tiles <- tiles$tile_id
-    }
-  } else {
-    # if the identifier was a country, get tiles by intersecting
-    country_shape <- countries[countries$iso3 == identifier, ]
-    if (nrow(country_shape) == 0) stop("Invalid country code")
-    country_codes <- identifier
-    tiles <- terra::intersect(gfw_tiles, country_shape)
-    tiles <- tiles$tile_id
-  }
-
-  return(list(tiles = tiles, country_codes = country_codes))
-}
-
-model_downloader <- function(ff_folder, country_codes, bucket, region, verbose) {
+# Helper function to download model data from Azure
+model_downloader_azure <- function(ff_folder, country_codes, container, verbose) {
   countries <- terra::vect(get(data("countries")))
   groups <- countries$group[countries$iso3 == country_codes]
+
   for (group in groups) {
     prefix <- file.path("models", group)
-    s3_files <- aws.s3::get_bucket(bucket, prefix = prefix, region = region, max = Inf)
-    s3_files <- sapply(s3_files, function(x) x$Key)
+    blob_list <- list_blobs(container, prefix = prefix)
+    model_files <- blob_list$name
+
     model_folder <- file.path(ff_folder, "models", group)
     ff_cat("Downloading model to", model_folder, verbose = verbose)
     if (!dir.exists(model_folder)) dir.create(model_folder, recursive = TRUE)
-    for (file in s3_files) {
-      ff_cat(file, verbose = verbose)
-      aws.s3::save_object(file,
-        bucket = bucket, region = region,
-        file = file.path(ff_folder, file), verbose = FALSE
-      )
+
+    for (file in model_files) {
+      local_path <- file.path(ff_folder, file)
+      if (!file.exists(local_path)) {
+        ff_cat(file, verbose = verbose)
+        storage_download(container, file, local_path, overwrite = FALSE)
+      }
     }
   }
 }
 
-data_downloader <- function(ff_folder, tile, feature_list, dates_to_check, bucket, region, verbose) {
+# Helper function to download input data from Azure
+data_downloader_azure <- function(ff_folder, tile, feature_list, dates_to_check, container, verbose) {
   input_folder <- file.path(ff_folder, "preprocessed", "input", tile)
   dir.create(input_folder, recursive = TRUE, showWarnings = FALSE)
 
-  # List available files in S3
+  # List available files in Azure
   prefix <- paste0("preprocessed/input/", tile)
-  s3_files <- aws.s3::get_bucket(bucket, prefix = prefix, region = region, max = Inf)
+  blob_list <- list_blobs(container, prefix = prefix)
 
   for (feature in feature_list) {
     feature_pattern <- paste0("_", feature, "\\.tif$")
-    matching_files <- grep(feature_pattern, sapply(s3_files, function(x) x$Key), value = TRUE)
+    matching_files <- grep(feature_pattern, blob_list$name, value = TRUE)
 
     if (!is.null(dates_to_check)) {
       # Filter by dates
@@ -284,59 +220,138 @@ data_downloader <- function(ff_folder, tile, feature_list, dates_to_check, bucke
       }
     }
 
-    # Sync matched files
+    # Download matched files
     for (file in matching_files) {
-      if (!file.exists(file.path(ff_folder, file))) {
+      local_path <- file.path(ff_folder, file)
+      if (!file.exists(local_path)) {
         ff_cat(file, verbose = verbose)
-        aws.s3::save_object(file,
-          bucket = bucket, region = region,
-          file = file.path(ff_folder, file), verbose = FALSE
-        )
+        storage_download(container, file, local_path, overwrite = FALSE)
       }
     }
   }
 }
 
-prediction_downloader <- function(ff_folder, country_codes, dates_to_check, bucket, region, verbose) {
+# Helper function to download risk area data from Azure
+risk_areas_downloader_azure <- function(ff_folder, country_codes, dates_to_check, container, verbose) {
   for (country_code in country_codes) {
-    pred_folder <- file.path(ff_folder, "predictions", country_code)
-    if (!dir.exists(pred_folder)) dir.create(pred_folder, recursive = TRUE)
-    prefix <- file.path("predictions", country_code)
-    s3_files <- aws.s3::get_bucket(bucket, prefix = prefix, region = region, max = Inf)
-    s3_files <- as.character(sapply(s3_files, function(x) x$Key))
+    risk_folder <- file.path(ff_folder, "risk_areas", country_code)
+    if (!dir.exists(risk_folder)) dir.create(risk_folder, recursive = TRUE)
+
+    prefix <- file.path("risk_areas", country_code)
+    blob_list <- list_blobs(container, prefix = prefix)
+    risk_files <- blob_list$name
+
     if (!is.null(dates_to_check)) {
       # Filter by dates
-      date_matches <- sapply(s3_files, function(f) {
+      date_matches <- sapply(risk_files, function(f) {
         file_date <- sub(paste0(".*_([0-9]{4}-[0-9]{2}-[0-9]{2}).*"), "\\1", f)
         file_date %in% dates_to_check
       })
 
       if (any(date_matches)) {
-        s3_files <- s3_files[date_matches]
+        risk_files <- risk_files[date_matches]
       } else {
         # If no files within date range, get the latest available
-        s3_files <- select_files_date(given_date = min(dates_to_check), listed_files = s3_files)
+        risk_files <- select_files_date(given_date = min(dates_to_check), listed_files = risk_files)
       }
     }
-    if (has_value(s3_files)) {
-      ff_cat("Downloading predictions to", pred_folder,
-        verbose = verbose
-      )
+
+    # Filter for .gpkg files
+    risk_files <- grep("\\.gpkg$", risk_files, value = TRUE)
+
+    if (has_value(risk_files)) {
+      ff_cat("Downloading risk areas to", risk_folder, verbose = verbose)
     } else {
-      ff_cat("no prediction files found for given dates",
-        color = "yellow", verbose = verbose
-      )
+      ff_cat("no risk area files found for given dates", color = "yellow", verbose = verbose)
     }
-    for (file in s3_files) {
-      if (!file.exists(file.path(ff_folder, file))) {
+
+    for (file in risk_files) {
+      local_path <- file.path(ff_folder, file)
+      if (!file.exists(local_path)) {
         ff_cat(file, verbose = verbose)
-        aws.s3::save_object(file,
-          bucket = bucket, region = region,
-          file = file.path(ff_folder, file), verbose = FALSE
-        )
+        storage_download(container, file, local_path, overwrite = FALSE)
       }
     }
   }
+}
+
+# Helper function to download prediction data from Azure
+prediction_downloader_azure <- function(ff_folder, country_codes, dates_to_check, container, verbose) {
+  for (country_code in country_codes) {
+    pred_folder <- file.path(ff_folder, "predictions", country_code)
+    if (!dir.exists(pred_folder)) dir.create(pred_folder, recursive = TRUE)
+
+    prefix <- file.path("predictions", country_code)
+    blob_list <- list_blobs(container, prefix = prefix)
+    prediction_files <- blob_list$name
+
+    if (!is.null(dates_to_check)) {
+      # Filter by dates
+      date_matches <- sapply(prediction_files, function(f) {
+        file_date <- sub(paste0(".*_([0-9]{4}-[0-9]{2}-[0-9]{2}).*"), "\\1", f)
+        file_date %in% dates_to_check
+      })
+
+      if (any(date_matches)) {
+        prediction_files <- prediction_files[date_matches]
+      } else {
+        # If no files within date range, get the latest available
+        prediction_files <- select_files_date(given_date = min(dates_to_check), listed_files = prediction_files)
+      }
+    }
+
+    if (has_value(prediction_files)) {
+      ff_cat("Downloading predictions to", pred_folder, verbose = verbose)
+    } else {
+      ff_cat("no prediction files found for given dates", color = "yellow", verbose = verbose)
+    }
+
+    for (file in prediction_files) {
+      local_path <- file.path(ff_folder, file)
+      if (!file.exists(local_path)) {
+        ff_cat(file, verbose = verbose)
+        storage_download(container, file, local_path, overwrite = FALSE)
+      }
+    }
+  }
+}
+
+#' Run input parameter checks for ff_sync
+#'
+#' @param ff_folder Local folder path
+#' @param identifier Tile ID or country code
+#' @param features Feature names or preset
+#' @param date_start Start date
+#' @param date_end End date
+#' @param download_model Model download flag
+#' @param download_data Data download flag
+#' @param download_groundtruth Ground truth download flag
+#' @param groundtruth_pattern Ground truth pattern
+#' @param download_predictions Predictions download flag
+#' @param container_name Azure container name
+#' @param storage_account Azure storage account name
+#' @param verbose Verbosity flag
+#' @noRd
+ff_sync_input_check <- function(ff_folder, identifier, features,
+                                date_start, date_end, download_model,
+                                download_data, download_groundtruth,
+                                groundtruth_pattern, download_predictions,
+                                download_risk_areas,
+                                container_name, storage_account, verbose) {
+  check_object_class(ff_folder, "character")
+  check_object_class(identifier, c("character", "SpatVector"))
+  check_object_class(features, "character")
+  check_object_class(date_start, "character")
+  check_object_class(date_end, "character")
+  check_object_class(download_model, "logical")
+  check_object_class(download_data, "logical")
+  check_object_class(download_groundtruth, "logical")
+  check_object_class(groundtruth_pattern, "character")
+  check_object_class(download_predictions, "logical")
+  check_object_class(download_risk_areas, "logical")
+  check_object_class(container_name, "character")
+  check_object_class(storage_account, "character")
+  check_object_class(verbose, "logical")
 }
 
 #' Initialize and Validate ForestForesight Sync Parameters
@@ -378,14 +393,14 @@ sync_initialize_and_check <- function(ff_folder, date_start, date_end, features)
   ff_features <- ff_features[ff_features$source != "autogenerated", ]$name
   if (length(features) == 1) {
     if (!((casefold(features) %in%
-      c(ff_features, c("highest", "high", "medium", "low", "everything", "small model"))))) {
+           c(ff_features, c("highest", "high", "medium", "low", "everything", "small model"))))) {
       stop("incorrect feature option given. please give a vector of feature names
     or choose between:
          Highest, High, Medium, Low, Everything, Small Model")
     }
   } else {
     if (!all((casefold(features) %in%
-      ff_features))) {
+              ff_features))) {
       stop("incorrect feature option given. please give a vector of feature names
     or choose between:
          Highest, High, Medium, Low, Everything, Small Model")
@@ -421,38 +436,88 @@ sync_initialize_and_check <- function(ff_folder, date_start, date_end, features)
   return(list(date_start = date_start, date_end = date_end))
 }
 
-#' Run input parameter checks for ff_sync
-#'
-#' @param ff_folder Local folder path
-#' @param identifier Tile ID or country code
-#' @param features Feature names or preset
-#' @param date_start Start date
-#' @param date_end End date
-#' @param download_model Model download flag
-#' @param download_data Data download flag
-#' @param download_groundtruth Ground truth download flag
-#' @param groundtruth_pattern Ground truth pattern
-#' @param download_predictions Predictions download flag
-#' @param bucket S3 bucket name
-#' @param region AWS region
-#' @param verbose Verbosity flag
-#' @noRd
-ff_sync_input_check <- function(ff_folder, identifier, features,
-                                date_start, date_end, download_model,
-                                download_data, download_groundtruth,
-                                groundtruth_pattern, download_predictions,
-                                bucket, region, verbose) {
-  check_object_class(ff_folder, "character")
-  check_object_class(identifier, c("character", "SpatVector"))
-  check_object_class(features, "character")
-  check_object_class(date_start, "character")
-  check_object_class(date_end, "character")
-  check_object_class(download_model, "logical")
-  check_object_class(download_data, "logical")
-  check_object_class(download_groundtruth, "logical")
-  check_object_class(groundtruth_pattern, "character")
-  check_object_class(download_predictions, "logical")
-  check_object_class(bucket, "character")
-  check_object_class(region, "character")
-  check_object_class(verbose, "logical")
+get_tiles_and_country_codes <- function(identifier) {
+  countries <- terra::vect(get(data("countries", envir = environment())))
+  gfw_tiles <- terra::vect(get(data("gfw_tiles", envir = environment())))
+  # test if identifier is a tile
+  if (is.character(identifier) && nchar(identifier) == 8 && grepl("^[0-9]{2}[NS]_[0-9]{3}[EW]$", identifier)) {
+    tiles <- identifier
+    identifier <- gfw_tiles[gfw_tiles$tile_id == identifier]
+  }
+  # if the identifier is a spatvector, do this
+  if (inherits(identifier, "SpatVector")) {
+    check_spatvector(identifier, check_size = FALSE)
+    identifier <- terra::buffer(identifier, width = -1)
+
+    # Intersect the provided SpatVector with countries to get ISO3 codes
+    intersected <- terra::intersect(identifier, countries)
+    country_codes <- unique(intersected$iso3)
+
+    # Get tiles that intersect with the provided SpatVector
+    if (!exists("tiles")) {
+      tiles <- terra::intersect(gfw_tiles, identifier)
+      tiles <- tiles$tile_id
+    }
+  } else {
+    # if the identifier was a country, get tiles by intersecting
+    country_shape <- countries[countries$iso3 == identifier, ]
+    if (nrow(country_shape) == 0) stop("Invalid country code")
+    country_codes <- identifier
+    tiles <- terra::intersect(gfw_tiles, country_shape)
+    tiles <- tiles$tile_id
+  }
+
+  return(list(tiles = tiles, country_codes = country_codes))
+}
+
+ff_sync_get_features <- function(features, ff_folder) {
+  feature_list <- NULL
+  if (is.character(features)) {
+    features <- tolower(features)
+    if (length(features) == 1) {
+      if (features == "small model") {
+        # Find and load small model RDA files
+        model_files <- list.files(file.path(ff_folder, "models"),
+                                  pattern = "small\\.rda$",
+                                  recursive = TRUE,
+                                  full.names = TRUE
+        )
+        if (length(model_files) == 0) {
+          stop("no models were found. Either change download_model to TRUE or choose another option for features")
+        }
+        feature_list <- unique(unlist(lapply(model_files, function(f) {
+          get(load(f))
+        })))
+      } else if (features %in% c("highest", "high", "medium", "low", "everything")) {
+        # Load feature metadata
+        feature_metadata <- get(data("feature_metadata", envir = environment()))
+        importance_levels <- switch(features,
+                                    "highest" = c("Highest"),
+                                    "high" = c("Highest", "High"),
+                                    "medium" = c("Highest", "High", "Medium"),
+                                    "low" = c("Highest", "High", "Medium", "Low"),
+                                    "everything" = unique(feature_metadata$importance)
+        )
+        feature_list <- feature_metadata$name[feature_metadata$importance %in% importance_levels]
+      } else {
+        return(features)
+      }
+    } else {
+      # Vector of feature names provided
+      feature_metadata <- get("feature_metadata")
+      if (!all(features %in% feature_metadata$name)) {
+        missing_features <- features[!features %in% feature_metadata$name]
+        stop(
+          "The following features are not valid: ",
+          paste(missing_features, collapse = ", "),
+          "available features are:", paste(feature_metadata$name, collapse = "\n")
+        )
+      }
+      feature_list <- features
+    }
+  }
+  if (!"initialforestcover" %in% feature_list) {
+    feature_list <- c(feature_list, "initialforestcover")
+  }
+  return(feature_list)
 }
