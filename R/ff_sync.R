@@ -336,6 +336,7 @@ ff_sync_input_check <- function(ff_folder, identifier, features,
                                 date_start, date_end, download_model,
                                 download_data, download_groundtruth,
                                 groundtruth_pattern, download_predictions,
+                                download_risk_areas,
                                 container_name, storage_account, verbose) {
   check_object_class(ff_folder, "character")
   check_object_class(identifier, c("character", "SpatVector"))
@@ -347,6 +348,7 @@ ff_sync_input_check <- function(ff_folder, identifier, features,
   check_object_class(download_groundtruth, "logical")
   check_object_class(groundtruth_pattern, "character")
   check_object_class(download_predictions, "logical")
+  check_object_class(download_risk_areas, "logical")
   check_object_class(container_name, "character")
   check_object_class(storage_account, "character")
   check_object_class(verbose, "logical")
