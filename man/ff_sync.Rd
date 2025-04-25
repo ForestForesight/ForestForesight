@@ -2,7 +2,7 @@
 % Please edit documentation in R/ff_sync.R
 \name{ff_sync}
 \alias{ff_sync}
-\title{Sync ForestForesight Data from S3}
+\title{Sync ForestForesight Data from Azure Blob Storage}
 \usage{
 ff_sync(
   ff_folder = get_variable("FF_FOLDER"),
@@ -13,10 +13,11 @@ ff_sync(
   download_model = FALSE,
   download_data = TRUE,
   download_predictions = FALSE,
+  download_risk_areas = FALSE,
   download_groundtruth = TRUE,
   groundtruth_pattern = get_variable("DEFAULT_GROUNDTRUTH"),
-  bucket = "forestforesight-public",
-  region = "eu-west-1",
+  container_name = "forestforesight-data",
+  storage_account = "forestforesight",
   verbose = TRUE
 )
 }
@@ -41,6 +42,9 @@ Only works when downloading for entire countries. Default is FALSE.}
 \item{download_predictions}{Logical. Whether to download the prediction data.
 Only works when downloading for entire countries. Default is FALSE.}
 
+\item{download_risk_areas}{Logical. Whether to download the prediction data as geopackage risk areas.
+Only works when downloading for entire countries. Default is FALSE.}
+
 \item{download_groundtruth}{Logical. Whether to download the groundtruth data as well.
 This should be turned off when you want to use your own data as groundtruth. Default is TRUE.}
 
@@ -48,9 +52,9 @@ This should be turned off when you want to use your own data as groundtruth. Def
 This is normally groundtruth6m for 6 months but can be set to groundtruth1m, groundtruth3m
 or groundtruth12m for one, three or twelve months respectively}
 
-\item{bucket}{Character. Name of the S3 bucket. Default is "forestforesight-public".}
+\item{container_name}{Character. Name of the Azure container. Default is "forestforesight-data".}
 
-\item{region}{Character. AWS region of the bucket. Default is "eu-west-1".}
+\item{storage_account}{Character. Name of the Azure storage account. Default is "forestforesight".}
 
 \item{verbose}{Logical. Whether the function should be verbose.}
 }
@@ -58,7 +62,7 @@ or groundtruth12m for one, three or twelve months respectively}
 Invisible NULL. The function is called for its side effects.
 }
 \description{
-This function synchronizes ForestForesight data from a public S3 bucket to a local folder.
+This function synchronizes ForestForesight data from an Azure blob storage container to a local folder.
 It can sync data for a specific tile or an entire country, including input data, ground truth data,
 and optionally model data.
 }
