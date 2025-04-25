@@ -2,7 +2,7 @@
 ![Logo](https://www.wwf.nl/globalassets/afbeeldingen/projecten/forest-foresight/logo-forest-foresight.jpg?mode=crop&autorotate=true&upscale=False&width=1110&format=webp)
 
 ## About this package
-This R package provides tools for generating 6-month deforestation predictions, facilitating analysis at various spatial scales. The predictions are based on data divided into 10x10 degree tiles and can be conducted at the country, tile, or group-of-tiles level. It leverages both user-provided data and preprocessed datasets available on an open S3 bucket, covering the entire land-covered pantropical belt between -30 and 30 degrees latitude. The system makes for our global model extensive use of the GlobalForestWatch Integrated Alerts, which can be found [here](https://www.globalforestwatch.org/blog/data-and-research/integrated-deforestation-alerts/).
+This R package provides tools for generating 6-month deforestation predictions, facilitating analysis at various spatial scales. The predictions are based on data divided into 10x10 degree tiles and can be conducted at the country, tile, or group-of-tiles level. It leverages both user-provided data and preprocessed datasets available on an open azure container, covering the entire land-covered pantropical belt between -30 and 30 degrees latitude. The system makes for our global model extensive use of the GlobalForestWatch Integrated Alerts, which can be found [here](https://www.globalforestwatch.org/blog/data-and-research/integrated-deforestation-alerts/).
 
 All information about Forest Foresight can be found on our Confluence page [here](https://forestforesight.atlassian.net/wiki/spaces/EWS/pages/33136/Overview)
 

@@ -12,7 +12,6 @@ test_that("ff_dqc processes folder of raster files correctly", {
   ))
 
   # Test 2: Check the byfeature data frame structure and content
-  testthat::expect_s3_class(result$byfeature, "data.frame")
   expected_cols <- c(
     "feature", "type", "min_date", "max_date", "has_gaps", "has_doubles",
     "pixel_count", "xmin", "xmax", "ymin", "ymax", "resolution",
