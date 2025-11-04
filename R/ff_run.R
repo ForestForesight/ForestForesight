@@ -164,8 +164,11 @@ ff_run <- function(shape = NULL,
       )
     },
     error = function(e) {
-      ff_cat("Error plotting accuracy report - this may be due to incorrect plot window dimensions:", log_level = "error")
-      ff_cat(paste("Original error:", e$message), type = "error")
+      ff_cat("Could not plot accuracy report -
+             this may be due to incorrect plot window dimensions
+             (increase bottom-right window)",
+             log_level = "error",
+             color="yellow")
     }
   )
   return(list(
@@ -517,6 +520,12 @@ prepare_training_data <- function(ff_folder, shape, train_dates, filter_conditio
   ff_prep_params_combined <- merge_lists(ff_prep_params_original, ff_prep_parameters)
 
   train_input_data <- do.call(ff_prep, ff_prep_params_combined)
+  if(sum(ff_prep$feature_dataset$label)==0){
+    ff_cat("after data loading and filtering no actuals (Positives)
+           have been found in the input dataset to train on. Either change the area
+           , date range or filtering",
+           log_level = "ERROR",color="red")
+    stop()}
   return(list(train_input_data = train_input_data, ff_prep_params_combined = ff_prep_params_combined))
 }
 
