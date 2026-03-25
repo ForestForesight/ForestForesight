@@ -520,7 +520,7 @@ prepare_training_data <- function(ff_folder, shape, train_dates, filter_conditio
   ff_prep_params_combined <- merge_lists(ff_prep_params_original, ff_prep_parameters)
 
   train_input_data <- do.call(ff_prep, ff_prep_params_combined)
-  if(sum(ff_prep$feature_dataset$label)==0){
+  if(sum(train_input_data$feature_dataset$label)==0){
     ff_cat("after data loading and filtering no actuals (Positives)
            have been found in the input dataset to train on. Either change the area
            , date range or filtering",
