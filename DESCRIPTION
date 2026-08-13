@@ -8,32 +8,32 @@ Authors@R:
            family = "van Duijvenbode", 
            email = "jduijvenbode@wwf.nl", 
            role = c("aut", "cre"),
-           comment = structure("WWF-NL", .Names = "fnd")),
+           comment = c(fnd = "WWF-NL")),
     person(given = "Zillah", 
            family = "Calle", 
            role = "aut",
-           comment = structure("WWF-NL", .Names = "fnd")),
+           comment = c(fnd = "WWF-NL")),
     person(given = "Hasrul", 
            family = "Maruf", 
            role = "aut",
-           comment = structure("TU/e", .Names = "fnd")),
+           comment = c(fnd = "TU/e")),
     person(given = "Amin", 
            family = "Bakhshi", 
            role = "aut",
-           comment = structure("TU/e", .Names = "fnd")),
+           comment = c(fnd = "TU/e")),
     person(given = "Maas", 
            family = "van Apeldoorn", 
            role = "ctb",
-           comment = structure("TU/e", .Names = "fnd")))
+           comment = c(fnd = "TU/e")))
 Description: This package is built for the ForestForesight programme and for any partners that want to do their own predictions for deforestation.
     With this package you can download among others the GFW-alerts, preprocess those alerts and process per 10x10 degree tile and per country the data. 
     This processing means: downloading, preprocessing, training an XGboost model and predicting future deforestation.It also allows you to style the result and export accuracy statistics. 
-License: GPL-3 + COPYING file
+License: GPL-3 + file COPYING
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
 Depends: terra, sf, xgboost, httr, lubridate, smoothr, crayon, AzureStor, logging
-Suggests:testthat, devtools, lintr, styler, conflicted
+Suggests: testthat, devtools, lintr, styler, conflicted
 Imports: 
     digest,
     here,
